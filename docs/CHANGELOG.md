@@ -12,6 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 <!-- 新条目格式：- [类型] 描述（类型取值：新功能/改进/修复/文档/测试/chore）-->
 <!-- 每条独立一行追加到本段末尾，无需分类标题，合并时冲突最小 -->
 
+- [文档] 📋 **Thêm kế hoạch chuyển đổi sang thị trường Việt Nam** — Brainstorm session hoàn tất, kết quả lưu tại `docs/vietnam-migration-plan.md`. Quyết định: dữ liệu vnstock+TCBS, chỉ HOSE, báo cáo tiếng Việt, thông báo Zalo+Telegram+Discord, strategies chuyển đổi+thêm mới. Chờ xác nhận trước khi implementation.
+
 - [修复] 🐳 **Docker WebUI 运行时优先复用预构建静态资源** — `prepare_webui_frontend_assets()` 现在会先检查镜像内已有的 `static/index.html` 是否可直接复用；当容器运行时不包含 `apps/dsa-web` 源码目录且未安装 `npm` 时，也不会误报“未找到前端项目，无法自动构建”，从而恢复 Docker 部署后的 WebUI 打开能力。
 - [修复] 市场复盘生成链路将 LLM `max_tokens` 从 `2048` 提升到 `8192`，降低长复盘输出因 `MAX_TOKENS` 提前截断导致内容未完成的概率。
 
