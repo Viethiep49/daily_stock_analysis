@@ -3,9 +3,9 @@
 Research command — deep research on a stock or market topic.
 
 Usage:
-    /research 600519                        -> Deep research on Kweichow Moutai
-    /research 600519 近期业绩风险            -> Focused research with specific question
-    /research 新能源板块前景分析              -> Topic-based research
+    /research VCB                          -> Deep research on Vietcombank
+    /research VCB recent earnings risk     -> Focused research with specific question
+    /research ngan hang sector outlook     -> Sector/topic research
 """
 
 import logging
@@ -20,7 +20,9 @@ from src.config import get_config
 logger = logging.getLogger(__name__)
 
 _RESEARCH_STOCK_CODE_RE = re.compile(
-    r"^\d{6}$|^HK\d{5}$|^[A-Z]{1,5}(?:\.[A-Z]{1,2})?$"
+    # VN equities: exactly 3 uppercase letters (VCB, FPT, VNM)
+    # VN ETFs: 6-8 alphanumeric chars starting with E or F (E1VFVN30, FUEVFVND)
+    r"^[A-Z]{3}$|^[EF][A-Z0-9]{5,7}$"
 )
 
 
@@ -29,9 +31,9 @@ class ResearchCommand(BotCommand):
     Research command handler — invoke the deep research agent.
 
     Usage:
-        /research 600519                    -> Deep research on a stock
-        /research 600519 业绩风险分析        -> Focused question
-        /research 新能源板块 发展前景         -> Sector research
+        /research VCB                      -> Deep research on Vietcombank
+        /research VCB earnings risk        -> Focused question
+        /research ngan hang sector phát triển -> Sector research
     """
 
     @property
@@ -54,15 +56,16 @@ class ResearchCommand(BotCommand):
         if not args:
             return BotResponse.text_response(
                 f"Usage: {self.usage}\n"
-                "Example: /research 600519 近期有哪些风险\n"
-                "Example: /research 新能源板块前景分析"
+                "Example: /research VCB recent earnings risk\n"
+                "Example: /research ngan hang sector outlook"
             )
 
         config = get_config()
 
         if not config.agent_mode:
             return BotResponse.text_response(
-                "⚠️ Agent 模式未开启，无法使用深度研究功能。\n请在配置中设置 `AGENT_MODE=true`。"
+                "\u26a0\ufe0f Agent mode is not enabled. Cannot use deep research.\n"
+                "Please set `AGENT_MODE=true` in your config."
             )
 
         # Parse arguments — first arg may be stock code, rest is the question
