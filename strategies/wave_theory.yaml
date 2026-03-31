@@ -2,8 +2,8 @@
 # 5-wave impulse + 3-wave corrective pattern analysis for trend and position sizing.
 
 name: wave_theory
-display_name: 波浪理论
-description: 基于艾略特波浪理论的推动浪与调整浪结构，判断当前所处浪型与潜在目标价。
+display_name: Ly Thuyet Song Elliott
+description: Phan tich cau truc song Elliott, nhan dien vi tri de toi uu diem vao.
 category: framework
 core_rules: [1, 2, 3, 4]
 required_tools:
@@ -62,3 +62,17 @@ instructions: |
   - 第3浪突破确认：`sentiment_score +12`
   - 第5浪末端/顶背离：`sentiment_score -10`
   - C浪下跌中：`sentiment_score -12`
+
+# Vietnam market parameters (HOSE/HNX)
+vn_market:
+  price_limit_hose: 0.07          # HOSE daily limit +/-7%
+  price_limit_hnx: 0.10           # HNX daily limit +/-10%
+  lot_size: 100                   # Minimum lot = 100 shares
+  settlement_rule: "T+2.5"        # Shares available to sell from T+2 afternoon
+  short_selling: false            # Not legally permitted in Vietnam
+  Vietnam Market Rules (HOSE/HNX):
+  - Price limit: HOSE +/-7% / HNX +/-10% per session.
+  - T+2.5 settlement: shares bought on T are only sellable from 13:00 on T+2.
+    Do NOT generate sell signals for stocks bought within the last 2 trading days.
+  - Lot size: all quantities must be multiples of 100 shares.
+  - Short selling is not permitted. Long positions only.

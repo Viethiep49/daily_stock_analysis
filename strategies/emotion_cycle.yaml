@@ -2,8 +2,8 @@
 # Uses market sentiment, turnover rate and volume pattern to time entries against crowd behavior.
 
 name: emotion_cycle
-display_name: 情绪周期
-description: 基于市场情绪、换手率与量价结构，识别情绪低点（恐慌底）与情绪高点（狂热顶），逆情绪布局。
+display_name: Chu Ky Cam Xuc Thi Truong
+description: Tim diem mua khi thi truong so hai qua muc.
 category: framework
 core_rules: [1, 2, 3, 5]
 required_tools:
@@ -77,3 +77,17 @@ instructions: |
   - 情绪顶部特征满足3项以上：`sentiment_score -12`
   - 情绪顶部特征满足全部5项：`sentiment_score -20`
   - 情绪平稳区间：不调整基础分
+
+# Vietnam market parameters (HOSE/HNX)
+vn_market:
+  price_limit_hose: 0.07          # HOSE daily limit +/-7%
+  price_limit_hnx: 0.10           # HNX daily limit +/-10%
+  lot_size: 100                   # Minimum lot = 100 shares
+  settlement_rule: "T+2.5"        # Shares available to sell from T+2 afternoon
+  short_selling: false            # Not legally permitted in Vietnam
+  Vietnam Market Rules (HOSE/HNX):
+  - Price limit: HOSE +/-7% / HNX +/-10% per session.
+  - T+2.5 settlement: shares bought on T are only sellable from 13:00 on T+2.
+    Do NOT generate sell signals for stocks bought within the last 2 trading days.
+  - Lot size: all quantities must be multiples of 100 shares.
+  - Short selling is not permitted. Long positions only.

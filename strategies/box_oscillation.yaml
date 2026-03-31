@@ -2,8 +2,8 @@
 # Buy at box support, sell at box resistance, profit from range-bound oscillation.
 
 name: box_oscillation
-display_name: 箱体震荡
-description: 识别价格箱体区间，在箱底买入、箱顶减仓，适用于横盘震荡行情。
+display_name: Dao Dong Trong Bien
+description: Mua o ho tro, ban o khang cu trong vung gia xac dinh.
 category: framework
 core_rules: [1, 2, 3]
 required_tools:
@@ -67,3 +67,17 @@ instructions: |
   - 箱体向上有效突破：`sentiment_score +15，转趋势策略`
   - 处于箱顶区域：`sentiment_score -5（不追高）`
   - 箱底有效跌破：`sentiment_score -15，离场`
+
+# Vietnam market parameters (HOSE/HNX)
+vn_market:
+  price_limit_hose: 0.07          # HOSE daily limit +/-7%
+  price_limit_hnx: 0.10           # HNX daily limit +/-10%
+  lot_size: 100                   # Minimum lot = 100 shares
+  settlement_rule: "T+2.5"        # Shares available to sell from T+2 afternoon
+  short_selling: false            # Not legally permitted in Vietnam
+  Vietnam Market Rules (HOSE/HNX):
+  - Price limit: HOSE +/-7% / HNX +/-10% per session.
+  - T+2.5 settlement: shares bought on T are only sellable from 13:00 on T+2.
+    Do NOT generate sell signals for stocks bought within the last 2 trading days.
+  - Lot size: all quantities must be multiples of 100 shares.
+  - Short selling is not permitted. Long positions only.

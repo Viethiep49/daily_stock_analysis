@@ -2,8 +2,8 @@
 # Based on Zen channel theory: pen, stroke, segment, hub structure analysis.
 
 name: chan_theory
-display_name: 缠论
-description: 基于缠论笔、线段、中枢结构，判断趋势级别、买卖点与背驰信号。
+display_name: Ly Thuyet Phan Doan
+description: Phan tich dua tren ly thuyet phan doan xu huong.
 category: framework
 core_rules: [1, 2, 3, 4]
 required_tools:
@@ -56,3 +56,17 @@ instructions: |
   - 二买/三买共振：`sentiment_score +10`
   - 中枢震荡无明确方向：`sentiment_score 维持基准`
   - 顶背驰 / 趋势向下：`sentiment_score -15`
+
+# Vietnam market parameters (HOSE/HNX)
+vn_market:
+  price_limit_hose: 0.07          # HOSE daily limit +/-7%
+  price_limit_hnx: 0.10           # HNX daily limit +/-10%
+  lot_size: 100                   # Minimum lot = 100 shares
+  settlement_rule: "T+2.5"        # Shares available to sell from T+2 afternoon
+  short_selling: false            # Not legally permitted in Vietnam
+  Vietnam Market Rules (HOSE/HNX):
+  - Price limit: HOSE +/-7% / HNX +/-10% per session.
+  - T+2.5 settlement: shares bought on T are only sellable from 13:00 on T+2.
+    Do NOT generate sell signals for stocks bought within the last 2 trading days.
+  - Lot size: all quantities must be multiples of 100 shares.
+  - Short selling is not permitted. Long positions only.

@@ -2,8 +2,8 @@
 # Identifies sector leaders during sector rotation cycles.
 
 name: dragon_head
-display_name: 龙头策略
-description: 板块轮动中识别龙头股。适用于板块启动或行业催化剂出现时。
+display_name: Co Phieu Dan Dat Nganh
+description: Nhan dien co phieu dau nganh co xu huong tang manh.
 category: trend
 core_rules: [2, 7]
 required_tools:
@@ -42,3 +42,17 @@ instructions: |
   - 确认为龙头股：sentiment_score +10
   - 板块正处于主动轮动期：额外 +5
   - 在 `buy_reason` 中注明"龙头策略"判断结果。
+
+# Vietnam market parameters (HOSE/HNX)
+vn_market:
+  price_limit_hose: 0.07          # HOSE daily limit +/-7%
+  price_limit_hnx: 0.10           # HNX daily limit +/-10%
+  lot_size: 100                   # Minimum lot = 100 shares
+  settlement_rule: "T+2.5"        # Shares available to sell from T+2 afternoon
+  short_selling: false            # Not legally permitted in Vietnam
+  Vietnam Market Rules (HOSE/HNX):
+  - Price limit: HOSE +/-7% / HNX +/-10% per session.
+  - T+2.5 settlement: shares bought on T are only sellable from 13:00 on T+2.
+    Do NOT generate sell signals for stocks bought within the last 2 trading days.
+  - Lot size: all quantities must be multiples of 100 shares.
+  - Short selling is not permitted. Long positions only.

@@ -2,8 +2,8 @@
 # Volume shrinks during pullback to MA5/MA10, then price bounces.
 
 name: shrink_pullback
-display_name: 缩量回踩
-description: 检测缩量回踩均线支撑信号，趋势延续的理想入场点。
+display_name: Hoi Ve Thu Hep Khoi Luong
+description: Diem mua tiep dien: hoi ve voi khoi luong thu hep trong xu huong tang.
 category: trend
 core_rules: [1, 2, 4]
 required_tools:
@@ -44,3 +44,17 @@ instructions: |
   - 理想买点设在 MA5 水平，次优买点设在 MA10。
   - 止损设在 MA20 水平。
   - 在 `buy_reason` 中注明"缩量回踩"。
+
+# Vietnam market parameters (HOSE/HNX)
+vn_market:
+  price_limit_hose: 0.07          # HOSE daily limit +/-7%
+  price_limit_hnx: 0.10           # HNX daily limit +/-10%
+  lot_size: 100                   # Minimum lot = 100 shares
+  settlement_rule: "T+2.5"        # Shares available to sell from T+2 afternoon
+  short_selling: false            # Not legally permitted in Vietnam
+  Vietnam Market Rules (HOSE/HNX):
+  - Price limit: HOSE +/-7% / HNX +/-10% per session.
+  - T+2.5 settlement: shares bought on T are only sellable from 13:00 on T+2.
+    Do NOT generate sell signals for stocks bought within the last 2 trading days.
+  - Lot size: all quantities must be multiples of 100 shares.
+  - Short selling is not permitted. Long positions only.
