@@ -1,124 +1,86 @@
 # -*- coding: utf-8 -*-
 """
-Market context detection for LLM prompts.
+===================================
+Market Context — Vietnam Market
+===================================
 
-Detects the market (A-shares, HK, US) from a stock code and returns
-market-specific role descriptions so prompts are not hardcoded to a
-single market.
+Provides market-specific role descriptions and analysis guidelines
+for LLM prompts. Vietnam (HOSE/HNX) is the only supported market.
 
-Fixes: https://github.com/ZhuLinsen/daily_stock_analysis/issues/644
+The detect_market() function always returns 'vn'; the multi-market
+routing logic for CN/HK/US has been removed.
 """
 
-import re
 from typing import Optional
 
 
 def detect_market(stock_code: Optional[str]) -> str:
-    """Detect market from stock code.
+    """
+    Return the market tag for the given stock code.
+
+    Vietnam-only build: always returns 'vn' regardless of input.
+
+    Args:
+        stock_code: VN ticker like 'VCB', 'E1VFVN30', etc.
 
     Returns:
-        One of 'cn', 'hk', 'us', or 'cn' as fallback.
+        Always 'vn'.
     """
-    if not stock_code:
-        return "cn"
-
-    code = stock_code.strip().upper()
-
-    # HK stocks: HK00700, 00700.HK, or 5-digit pure numbers
-    if code.startswith("HK") or code.endswith(".HK"):
-        return "hk"
-    lower = code.lower()
-    if lower.endswith(".hk"):
-        return "hk"
-    # 5-digit pure numbers are HK (A-shares are 6-digit)
-    if code.isdigit() and len(code) == 5:
-        return "hk"
-
-    # US stocks: 1-5 uppercase letters (AAPL, TSLA, GOOGL)
-    # Also handles suffixed forms like BRK.B
-    if re.match(r'^[A-Z]{1,5}(\.[A-Z]{1,2})?$', code):
-        return "us"
-
-    # Default: A-shares (6-digit numbers like 600519, 000001)
-    return "cn"
+    return "vn"
 
 
-# -- Market-specific role descriptions --
-
+# Market-specific role descriptions (LLM prompt injection)
 _MARKET_ROLES = {
-    "cn": {
-        "zh": " A 股",
-        "en": "China A-shares",
-    },
-    "hk": {
-        "zh": "港股",
-        "en": "Hong Kong stock",
-    },
-    "us": {
-        "zh": "美股",
-        "en": "US stock",
+    "vn": {
+        "vi": "Chứng khoán Việt Nam (HOSE/HNX)",
+        "en": "Vietnam stock market (HOSE/HNX)",
     },
 }
 
+# Market-specific analysis guidelines (injected into LLM system prompt)
 _MARKET_GUIDELINES = {
-    "cn": {
-        "zh": (
-            "- 本次分析对象为 **A 股**（中国沪深交易所上市股票）。\n"
-            "- 请关注 A 股特有的涨跌停机制（±10%/±20%/±30%）、T+1 交易制度及相关政策因素。"
+    "vn": {
+        "vi": (
+            "- Đối tượng phân tích là **cổ phiếu Việt Nam** niêm yết trên HOSE hoặc HNX.\n"
+            "- Lưu ý các đặc thù thị trường VN: biên độ giá HOSE ±7% / HNX ±10%, "
+            "quy tắc thanh toán T+2.5, lô chẵn 100 cổ phiếu, không có bán khống hợp pháp.\n"
+            "- Sử dụng ngôn ngữ tiếng Việt chuyên ngành tài chính chứng khoán."
         ),
         "en": (
-            "- This analysis covers a **China A-share** (listed on Shanghai/Shenzhen exchanges).\n"
-            "- Consider A-share-specific rules: daily price limits (±10%/±20%/±30%), T+1 settlement, and PRC policy factors."
-        ),
-    },
-    "hk": {
-        "zh": (
-            "- 本次分析对象为 **港股**（香港交易所上市股票）。\n"
-            "- 港股无涨跌停限制，支持 T+0 交易，需关注港币汇率、南北向资金流及联交所特有规则。"
-        ),
-        "en": (
-            "- This analysis covers a **Hong Kong stock** (listed on HKEX).\n"
-            "- HK stocks have no daily price limits, allow T+0 trading. Consider HKD FX, Southbound/Northbound flows, and HKEX-specific rules."
-        ),
-    },
-    "us": {
-        "zh": (
-            "- 本次分析对象为 **美股**（美国交易所上市股票）。\n"
-            "- 美股无涨跌停限制（但有熔断机制），支持 T+0 交易和盘前盘后交易，需关注美元汇率、美联储政策及 SEC 监管动态。"
-        ),
-        "en": (
-            "- This analysis covers a **US stock** (listed on NYSE/NASDAQ).\n"
-            "- US stocks have no daily price limits (but have circuit breakers), allow T+0 and pre/after-market trading. Consider USD FX, Fed policy, and SEC regulations."
+            "- This analysis covers a **Vietnam-listed stock** (HOSE or HNX).\n"
+            "- Vietnam market specifics: HOSE ±7% / HNX ±10% daily price limits, "
+            "T+2.5 settlement, lot size multiples of 100, no legal short-selling.\n"
+            "- Respond in professional Vietnamese financial terminology."
         ),
     },
 }
 
 
-def get_market_role(stock_code: Optional[str], lang: str = "zh") -> str:
-    """Return market-specific role description for LLM prompt.
+def get_market_role(stock_code: Optional[str], lang: str = "vi") -> str:
+    """
+    Return a market-specific role label for the LLM prompt.
 
     Args:
-        stock_code: The stock code being analyzed.
-        lang: 'zh' or 'en'.
+        stock_code: Ignored (Vietnam only).
+        lang:       'vi' (default) or 'en'.
 
     Returns:
-        Role string like 'A 股投资分析' or 'US stock investment analysis'.
+        Role string, e.g. 'Chứng khoán Việt Nam (HOSE/HNX)'.
     """
-    market = detect_market(stock_code)
-    lang_key = "en" if lang == "en" else "zh"
-    return _MARKET_ROLES.get(market, _MARKET_ROLES["cn"])[lang_key]
+    lang_key = "en" if lang == "en" else "vi"
+    return _MARKET_ROLES["vn"][lang_key]
 
 
-def get_market_guidelines(stock_code: Optional[str], lang: str = "zh") -> str:
-    """Return market-specific analysis guidelines for LLM prompt.
+def get_market_guidelines(stock_code: Optional[str], lang: str = "vi") -> str:
+    """
+    Return market-specific analysis guidelines for the LLM system prompt.
 
     Args:
-        stock_code: The stock code being analyzed.
-        lang: 'zh' or 'en'.
+        stock_code: Ignored (Vietnam only).
+        lang:       'vi' (default) or 'en'.
 
     Returns:
-        Multi-line string with market-specific guidelines.
+        Multi-line string with VN market rules and conventions.
     """
-    market = detect_market(stock_code)
-    lang_key = "en" if lang == "en" else "zh"
-    return _MARKET_GUIDELINES.get(market, _MARKET_GUIDELINES["cn"])[lang_key]
+    lang_key = "en" if lang == "en" else "vi"
+    return _MARKET_GUIDELINES["vn"][lang_key]

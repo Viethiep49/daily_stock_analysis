@@ -1,15 +1,19 @@
 # -*- coding: utf-8 -*-
 """
 ===================================
-交易日历模块 (Issue #373)
+Trading Calendar — Vietnam Market
 ===================================
 
-职责：
-1. 按市场（A股/港股/美股）判断当日是否为交易日
-2. 按市场时区取“今日”日期，避免服务器 UTC 导致日期错误
-3. 支持 per-stock 过滤：只分析当日开市市场的股票
+Responsibilities:
+1. Determine whether today is a trading day for HOSE / HNX
+2. Return today's date in Vietnam timezone (Asia/Ho_Chi_Minh, UTC+7)
+3. Support per-stock market-open filtering
 
-依赖：exchange-calendars（可选，不可用时 fail-open）
+Exchange codes (exchange-calendars):
+  HOSE → XSTC  (Ho Chi Minh Stock Exchange)
+
+Dependencies:
+  exchange-calendars (optional — fail-open when unavailable)
 """
 
 import logging
@@ -18,7 +22,7 @@ from typing import Optional, Set
 
 logger = logging.getLogger(__name__)
 
-# Exchange-calendars availability
+# exchange-calendars availability
 _XCALS_AVAILABLE = False
 try:
     import exchange_calendars as xcals
@@ -29,52 +33,45 @@ except ImportError:
         "Run: pip install exchange-calendars"
     )
 
-# Market -> exchange code (exchange-calendars)
-MARKET_EXCHANGE = {"cn": "XSHG", "hk": "XHKG", "us": "XNYS"}
+# Market → exchange code (exchange-calendars)
+# Only Vietnam markets are supported.
+MARKET_EXCHANGE = {"vn": "XSTC"}
 
-# Market -> IANA timezone for "today"
-MARKET_TIMEZONE = {
-    "cn": "Asia/Shanghai",
-    "hk": "Asia/Hong_Kong",
-    "us": "America/New_York",
-}
+# Market → IANA timezone
+MARKET_TIMEZONE = {"vn": "Asia/Ho_Chi_Minh"}
 
 
 def get_market_for_stock(code: str) -> Optional[str]:
     """
-    Infer market region for a stock code.
+    Infer market region from a stock code.
 
     Returns:
-        'cn' | 'hk' | 'us' | None (None = unrecognized, fail-open: treat as open)
+        'vn' for any valid VN equity/ETF ticker.
+        None if the code is unrecognized (fail-open: treated as open).
     """
     if not code or not isinstance(code, str):
         return None
-    code = (code or "").strip().upper()
 
-    from data_provider import is_us_stock_code, is_us_index_code, is_hk_stock_code
+    from data_provider.base import is_vn_stock_code
 
-    if is_us_stock_code(code) or is_us_index_code(code):
-        return "us"
-    if is_hk_stock_code(code):
-        return "hk"
-    # A-share: 6-digit numeric
-    if code.isdigit() and len(code) == 6:
-        return "cn"
+    if is_vn_stock_code(code.strip().upper()):
+        return "vn"
     return None
 
 
 def is_market_open(market: str, check_date: date) -> bool:
     """
-    Check if the given market is open on the given date.
+    Check if the given market is open on the specified date.
 
-    Fail-open: returns True if exchange-calendars unavailable or date out of range.
+    Fail-open: returns True when exchange-calendars is unavailable
+    or the date is out of the supported range.
 
     Args:
-        market: 'cn' | 'hk' | 'us'
+        market:     'vn'
         check_date: Date to check
 
     Returns:
-        True if trading day (or fail-open), False otherwise
+        True if it is a trading day (or fail-open), False otherwise.
     """
     if not _XCALS_AVAILABLE:
         return True
@@ -85,30 +82,32 @@ def is_market_open(market: str, check_date: date) -> bool:
         cal = xcals.get_calendar(ex)
         session = datetime(check_date.year, check_date.month, check_date.day)
         return cal.is_session(session)
-    except Exception as e:
-        logger.warning("trading_calendar.is_market_open fail-open: %s", e)
+    except Exception as exc:
+        logger.warning("trading_calendar.is_market_open fail-open: %s", exc)
         return True
 
 
 def get_open_markets_today() -> Set[str]:
     """
-    Get markets that are open today (by each market's local timezone).
+    Return the set of markets open today in their local timezone.
 
     Returns:
-        Set of market keys ('cn', 'hk', 'us') that are trading today
+        Set of market keys — always a subset of {'vn'}.
     """
     if not _XCALS_AVAILABLE:
-        return {"cn", "hk", "us"}
+        return {"vn"}
+
     result: Set[str] = set()
     from zoneinfo import ZoneInfo
+
     for mkt, tz_name in MARKET_TIMEZONE.items():
         try:
             tz = ZoneInfo(tz_name)
             today = datetime.now(tz).date()
             if is_market_open(mkt, today):
                 result.add(mkt)
-        except Exception as e:
-            logger.warning("get_open_markets_today fail-open for %s: %s", mkt, e)
+        except Exception as exc:
+            logger.warning("get_open_markets_today fail-open for %s: %s", mkt, exc)
             result.add(mkt)
     return result
 
@@ -117,29 +116,18 @@ def compute_effective_region(
     config_region: str, open_markets: Set[str]
 ) -> Optional[str]:
     """
-    Compute effective market review region given config and open markets.
+    Compute the effective market-review region given config and open markets.
 
     Args:
-        config_region: From MARKET_REVIEW_REGION ('cn' | 'us' | 'both')
-        open_markets: Markets open today
+        config_region: From MARKET_REVIEW_REGION — expected value: 'vn'
+        open_markets:  Markets open today (from get_open_markets_today)
 
     Returns:
-        None: caller uses config default (check disabled)
-        '': all relevant markets closed, skip market review
-        'cn' | 'us' | 'both': effective subset for today
+        None  → caller uses config default (check disabled)
+        ''    → Vietnam market is closed today; skip market review
+        'vn'  → Vietnam market is open; proceed with review
     """
-    if config_region not in ("cn", "us", "both"):
-        config_region = "cn"
-    if config_region == "cn":
-        return "cn" if "cn" in open_markets else ""
-    if config_region == "us":
-        return "us" if "us" in open_markets else ""
-    # both
-    parts = []
-    if "cn" in open_markets:
-        parts.append("cn")
-    if "us" in open_markets:
-        parts.append("us")
-    if not parts:
-        return ""
-    return "both" if len(parts) == 2 else parts[0]
+    # Normalize: any non-'vn' value falls back to 'vn'
+    if config_region not in ("vn",):
+        config_region = "vn"
+    return "vn" if "vn" in open_markets else ""

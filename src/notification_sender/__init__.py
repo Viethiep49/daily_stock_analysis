@@ -1,20 +1,40 @@
 # -*- coding: utf-8 -*-
 """
 ===================================
-通知发送层模块
+Notification Sender Layer
 ===================================
 
-提供各种通知发送服务
+Primary channels (Vietnam market):
+  - Telegram (primary)
+  - Discord  (primary)
+  - Email/SMTP (optional)
+  - Slack (optional)
+  - Custom Webhook (optional)
+  - Zalo (optional — requires Zalo OA approval)
+
+Removed: WeChat Work, Feishu/Lark, DingTalk, PushPlus, Server酱3, AstrBot, Pushover
 """
 
-from .astrbot_sender import AstrbotSender
 from .custom_webhook_sender import CustomWebhookSender
 from .discord_sender import DiscordSender
 from .email_sender import EmailSender
-from .feishu_sender import FeishuSender
-from .pushover_sender import PushoverSender
-from .pushplus_sender import PushplusSender
-from .serverchan3_sender import Serverchan3Sender
 from .slack_sender import SlackSender
 from .telegram_sender import TelegramSender
-from .wechat_sender import WechatSender, WECHAT_IMAGE_MAX_BYTES
+
+# Zalo: optional — only import if available
+try:
+    from .zalo_sender import ZaloSender
+    _ZALO_AVAILABLE = True
+except ImportError:
+    ZaloSender = None
+    _ZALO_AVAILABLE = False
+
+__all__ = [
+    "CustomWebhookSender",
+    "DiscordSender",
+    "EmailSender",
+    "SlackSender",
+    "TelegramSender",
+    "ZaloSender",
+    "_ZALO_AVAILABLE",
+]

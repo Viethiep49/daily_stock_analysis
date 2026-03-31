@@ -1,21 +1,24 @@
 # -*- coding: utf-8 -*-
 """
 ===================================
-数据源基类与管理器
+Data Provider Base Classes & Manager
 ===================================
 
-设计模式：策略模式 (Strategy Pattern)
-- BaseFetcher: 抽象基类，定义统一接口
-- DataFetcherManager: 策略管理器，实现自动切换
+Design Pattern: Strategy Pattern
+- BaseFetcher:        Abstract base class defining the unified data-fetch interface
+- DataFetcherManager: Strategy manager with automatic source failover
 
-防封禁策略：
-1. 每个 Fetcher 内置流控逻辑
-2. 失败自动切换到下一个数据源
-3. 指数退避重试机制
+Anti-ban strategy:
+1. Per-fetcher rate-limit / flow-control logic
+2. Automatic failover to next available source on failure
+3. Exponential back-off retry
+
+Market: Vietnam (HOSE, HNX) only
 """
 
 import logging
 import random
+import re
 import time
 from threading import BoundedSemaphore, RLock, Thread
 from abc import ABC, abstractmethod
@@ -27,11 +30,10 @@ import numpy as np
 from src.data.stock_mapping import STOCK_NAME_MAP, is_meaningful_stock_name
 from .fundamental_adapter import AkshareFundamentalAdapter
 
-# 配置日志
 logger = logging.getLogger(__name__)
 
 
-# === 标准化列名定义 ===
+# Standard output column schema
 STANDARD_COLUMNS = ['date', 'open', 'high', 'low', 'close', 'volume', 'amount', 'pct_chg']
 
 
@@ -115,93 +117,38 @@ def normalize_stock_code(stock_code: str) -> str:
     return code
 
 
-ETF_PREFIXES = ("51", "52", "56", "58", "15", "16", "18")
+# VN ETF code patterns: 6-8 alphanumeric characters starting with E or F
+_VN_ETF_PATTERN = re.compile(r'^[EF][A-Z0-9]{5,7}$')
+# VN equity pattern: exactly 3 uppercase letters
+_VN_EQUITY_PATTERN = re.compile(r'^[A-Z]{3}$')
 
 
-def _is_us_market(code: str) -> bool:
-    """判断是否为美股/美股指数代码（不含中文前后缀）。"""
-    from .us_index_mapping import is_us_stock_code, is_us_index_code
-
-    normalized = (code or "").strip().upper()
-    return is_us_index_code(normalized) or is_us_stock_code(normalized)
-
-
-def _is_hk_market(code: str) -> bool:
+def is_vn_stock_code(code: str) -> bool:
     """
-    判定是否为港股代码。
+    Check whether a code is a valid Vietnam stock or ETF ticker.
 
-    支持 `HK00700` 及纯 5 位数字形式（A 股 ETF/股票常见为 6 位）。
+    Accepted formats:
+      - 3-char equities:  VCB, FPT, VNM, HPG
+      - 6-8 char ETFs:   E1VFVN30, FUEVFVND
+
+    Args:
+        code: Raw ticker string (case-insensitive input).
+
+    Returns:
+        True if the code matches VN equity or ETF pattern.
     """
-    normalized = (code or "").strip().upper()
-    if normalized.endswith(".HK"):
-        base = normalized[:-3]
-        return base.isdigit() and 1 <= len(base) <= 5
-    if normalized.startswith("HK"):
-        digits = normalized[2:]
-        return digits.isdigit() and 1 <= len(digits) <= 5
-    if normalized.isdigit() and len(normalized) == 5:
-        return True
-    return False
-
-
-def _is_etf_code(code: str) -> bool:
-    """判定 A 股 ETF 基金代码（保守规则）。"""
-    normalized = normalize_stock_code(code)
-    return (
-        normalized.isdigit()
-        and len(normalized) == 6
-        and normalized.startswith(ETF_PREFIXES)
-    )
+    if not code or not isinstance(code, str):
+        return False
+    normalized = code.strip().upper()
+    return bool(_VN_EQUITY_PATTERN.match(normalized) or _VN_ETF_PATTERN.match(normalized))
 
 
 def _market_tag(code: str) -> str:
-    """返回市场标签: cn/us/hk."""
-    if _is_us_market(code):
-        return "us"
-    if _is_hk_market(code):
-        return "hk"
-    return "cn"
+    """Return market tag — always 'vn' (Vietnam market only)."""
+    return "vn"
 
 
-def is_bse_code(code: str) -> bool:
-    """
-    Check if the code is a Beijing Stock Exchange (BSE) A-share code.
-
-    BSE rules (2026):
-    - New format (2024+): 92xxxx main trading codes
-    - Historical ranges: 43xxxx, 83xxxx, 87xxxx, 88xxxx
-    - Special instruments: 81xxxx convertible bonds, 82xxxx preferred shares
-    - Subscription codes: 889xxx
-    Note: 900xxx are Shanghai B-shares and must return False.
-    """
-    c = (code or "").strip().split(".")[0]
-    if len(c) != 6 or not c.isdigit():
-        return False
-
-    if c.startswith("900"):
-        return False
-
-    return c.startswith(("92", "43", "81", "82", "83", "87", "88"))
-
-def is_st_stock(name: str) -> bool:
-    """
-    Check if the stock is an ST or *ST stock based on its name.
-
-    ST stocks have special trading rules and typically a ±5% limit.
-    """
-    n = (name or "").upper()
-    return 'ST' in n
-
-def is_kc_cy_stock(code: str) -> bool:
-    """
-    Check if the stock is a STAR Market (科创板) or ChiNext (创业板) stock based on its code.
-
-    - STAR Market: Codes starting with 688
-    - ChiNext: Codes starting with 300
-    Both have a ±20% limit.
-    """
-    c = (code or "").strip().split(".")[0]
-    return c.startswith("688") or c.startswith("30")
+# is_bse_code / is_st_stock / is_kc_cy_stock removed — CN market no longer supported.
 
 
 def canonical_stock_code(code: str) -> str:
@@ -740,51 +687,29 @@ class DataFetcherManager:
     
     def _init_default_fetchers(self) -> None:
         """
-        初始化默认数据源列表
+        Initialize the default VN data source list.
 
-        优先级动态调整逻辑：
-        - 如果配置了 TUSHARE_TOKEN：Tushare 优先级提升为 0（最高）
-        - 否则按默认优先级：
-          0. EfinanceFetcher (Priority 0) - 最高优先级
-          1. AkshareFetcher (Priority 1)
-          2. PytdxFetcher (Priority 2) - 通达信
-          2. TushareFetcher (Priority 2)
-          3. BaostockFetcher (Priority 3)
-          4. YfinanceFetcher (Priority 4)
+        Priority order:
+          0. VnstockFetcher  — primary (vnstock library, HOSE/HNX)
+          1. TCBSFetcher     — fallback (TCBS public REST API)
         """
-        from .efinance_fetcher import EfinanceFetcher
-        from .akshare_fetcher import AkshareFetcher
-        from .tushare_fetcher import TushareFetcher
-        from .pytdx_fetcher import PytdxFetcher
-        from .baostock_fetcher import BaostockFetcher
-        from .yfinance_fetcher import YfinanceFetcher
-        # 创建所有数据源实例（优先级在各 Fetcher 的 __init__ 中确定）
-        efinance = EfinanceFetcher()
-        akshare = AkshareFetcher()
-        tushare = TushareFetcher()  # 会根据 Token 配置自动调整优先级
-        pytdx = PytdxFetcher()      # 通达信数据源（可配 PYTDX_HOST/PYTDX_PORT）
-        baostock = BaostockFetcher()
-        yfinance = YfinanceFetcher()
+        from .vnstock_fetcher import VnstockFetcher
+        from .tcbs_fetcher import TCBSFetcher
 
-        # 初始化数据源列表
-        self._fetchers = [
-            efinance,
-            akshare,
-            tushare,
-            pytdx,
-            baostock,
-            yfinance,
-        ]
+        fetcher_classes = [VnstockFetcher, TCBSFetcher]
+        self._fetchers = []
+        for cls in fetcher_classes:
+            try:
+                self._fetchers.append(cls())
+            except ImportError as exc:
+                logger.warning("[DataFetcherManager] Skipping %s: %s", cls.__name__, exc)
 
-        # 按优先级排序（Tushare 如果配置了 Token 且初始化成功，优先级为 0）
         self._fetchers.sort(key=lambda f: f.priority)
-
-        # 构建优先级说明
-        priority_info = ", ".join([f"{f.name}(P{f.priority})" for f in self._fetchers])
-        logger.info(f"已初始化 {len(self._fetchers)} 个数据源（按优先级）: {priority_info}")
+        priority_info = ", ".join(f"{f.name}(P{f.priority})" for f in self._fetchers)
+        logger.info("[DataFetcherManager] Initialized %d source(s): %s", len(self._fetchers), priority_info)
     
     def add_fetcher(self, fetcher: BaseFetcher) -> None:
-        """添加数据源并重新排序"""
+        """Add a fetcher and re-sort by priority."""
         self._fetchers.append(fetcher)
         self._fetchers.sort(key=lambda f: f.priority)
     

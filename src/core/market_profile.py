@@ -1,61 +1,58 @@
 # -*- coding: utf-8 -*-
 """
-大盘复盘市场区域配置
+===================================
+Market Profile — Vietnam Market
+===================================
 
-定义各市场区域的指数、新闻搜索词、Prompt 提示等元数据，
-供 MarketAnalyzer 按 region 切换 A 股/美股复盘行为。
+Defines per-region metadata (indices, news queries, prompt hints)
+used by MarketAnalyzer for the daily market review.
+
+Only Vietnam (HOSE + HNX) is supported.
 """
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import List
 
 
 @dataclass
 class MarketProfile:
-    """大盘复盘市场区域配置"""
+    """Configuration metadata for a market region's review."""
 
-    region: str  # "cn" | "us"
-    # 用于判断整体走势的指数代码，cn 用上证 000001，us 用标普 SPX
+    region: str
+    # Primary index code used to gauge overall market sentiment
     mood_index_code: str
-    # 新闻搜索关键词
-    news_queries: List[str]
-    # 指数点评 Prompt 提示语
-    prompt_index_hint: str
-    # 市场概况是否包含涨跌家数、涨停跌停（A 股有，美股无）
-    has_market_stats: bool
-    # 市场概况是否包含板块涨跌（A 股有，美股暂无）
-    has_sector_rankings: bool
+    # News search keywords
+    news_queries: List[str] = field(default_factory=list)
+    # Hint text injected into the LLM prompt for index commentary
+    prompt_index_hint: str = ""
+    # Whether the market provides advance/decline statistics (HOSE/HNX do)
+    has_market_stats: bool = True
+    # Whether sector rankings are available
+    has_sector_rankings: bool = True
 
 
-CN_PROFILE = MarketProfile(
-    region="cn",
-    mood_index_code="000001",
+VN_PROFILE = MarketProfile(
+    region="vn",
+    mood_index_code="VNINDEX",
     news_queries=[
-        "A股 大盘 复盘",
-        "股市 行情 分析",
-        "A股 市场 热点 板块",
+        "VN-Index thị trường chứng khoán",
+        "cổ phiếu Việt Nam phân tích",
+        "HOSE HNX thị trường hôm nay",
+        "chứng khoán Việt Nam tin tức",
     ],
-    prompt_index_hint="分析上证、深证、创业板等各指数走势特点",
+    prompt_index_hint=(
+        "Phân tích diễn biến VN-Index, VN30 và các ngành dẫn dắt thị trường Việt Nam. "
+        "Chú ý biên độ dao động HOSE ±7%, HNX ±10%, quy tắc T+2.5 và lô chẵn 100 cổ phiếu."
+    ),
     has_market_stats=True,
     has_sector_rankings=True,
 )
 
-US_PROFILE = MarketProfile(
-    region="us",
-    mood_index_code="SPX",
-    news_queries=[
-        "美股 大盘",
-        "US stock market",
-        "S&P 500 NASDAQ",
-    ],
-    prompt_index_hint="分析标普500、纳斯达克、道指等各指数走势特点",
-    has_market_stats=False,
-    has_sector_rankings=False,
-)
-
 
 def get_profile(region: str) -> MarketProfile:
-    """根据 region 返回对应的 MarketProfile"""
-    if region == "us":
-        return US_PROFILE
-    return CN_PROFILE
+    """
+    Return the MarketProfile for the given region.
+
+    Currently only 'vn' is supported; any other value maps to VN_PROFILE.
+    """
+    return VN_PROFILE
