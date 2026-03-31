@@ -148,6 +148,13 @@ def _market_tag(code: str) -> str:
     return "vn"
 
 
+def _is_etf_code(code: str) -> bool:
+    """Check if the code is a Vietnam ETF."""
+    if not code or not isinstance(code, str):
+        return False
+    return bool(_VN_ETF_PATTERN.match(code.strip().upper()))
+
+
 # is_bse_code / is_st_stock / is_kc_cy_stock removed — CN market no longer supported.
 
 
@@ -945,58 +952,8 @@ class DataFetcherManager:
             logger.debug(f"[实时行情] 功能已禁用，跳过 {stock_code}")
             return None
 
-        # 美股指数由 YfinanceFetcher 处理（在美股股票检查之前）
-        if is_us_index_code(stock_code):
-            for fetcher in self._fetchers:
-                if fetcher.name == "YfinanceFetcher":
-                    if hasattr(fetcher, 'get_realtime_quote'):
-                        try:
-                            quote = fetcher.get_realtime_quote(stock_code)
-                            if quote is not None:
-                                logger.info(f"[实时行情] 美股指数 {stock_code} 成功获取 (来源: yfinance)")
-                                return quote
-                        except Exception as e:
-                            logger.warning(f"[实时行情] 美股指数 {stock_code} 获取失败: {e}")
-                    break
-            logger.warning(f"[实时行情] 美股指数 {stock_code} 无可用数据源")
-            return None
+        # Fetch Vietnam realtime quotes.
 
-        # 美股单独处理，使用 YfinanceFetcher
-        if _is_us_code(stock_code):
-            for fetcher in self._fetchers:
-                if fetcher.name == "YfinanceFetcher":
-                    if hasattr(fetcher, 'get_realtime_quote'):
-                        try:
-                            quote = fetcher.get_realtime_quote(stock_code)
-                            if quote is not None:
-                                logger.info(f"[实时行情] 美股 {stock_code} 成功获取 (来源: yfinance)")
-                                return quote
-                        except Exception as e:
-                            logger.warning(f"[实时行情] 美股 {stock_code} 获取失败: {e}")
-                    break
-            logger.warning(f"[实时行情] 美股 {stock_code} 无可用数据源")
-            return None
-
-        # 港股实时行情只走港股专用入口，避免按 A 股 source_priority
-        # 反复触发同一个 ak.stock_hk_spot_em() 接口。
-        if _is_hk_market(stock_code):
-            for fetcher in self._fetchers:
-                if fetcher.name != "AkshareFetcher":
-                    continue
-                if not hasattr(fetcher, 'get_realtime_quote'):
-                    break
-                try:
-                    quote = fetcher.get_realtime_quote(stock_code, source="hk")
-                    if quote is not None and quote.has_basic_data():
-                        logger.info(f"[实时行情] 港股 {stock_code} 成功获取 (来源: akshare_hk)")
-                        return quote
-                except Exception as e:
-                    logger.warning(f"[实时行情] 港股 {stock_code} 获取失败: {e}")
-                break
-
-            logger.warning(f"[实时行情] 港股 {stock_code} 无可用数据源")
-            return None
-        
         # 获取配置的数据源优先级
         source_priority = config.realtime_source_priority.split(',')
         
@@ -1990,7 +1947,7 @@ class DataFetcherManager:
         config = get_config()
         stock_code = normalize_stock_code(stock_code)
         timeout = float(budget_seconds if budget_seconds is not None else config.fundamental_fetch_timeout_seconds)
-        if _market_tag(stock_code) != "cn" or _is_etf_code(stock_code):
+        if _market_tag(stock_code) != "vn" or _is_etf_code(stock_code):
             return self._build_fundamental_block(
                 "not_supported",
                 {},
@@ -2054,7 +2011,7 @@ class DataFetcherManager:
         config = get_config()
         stock_code = normalize_stock_code(stock_code)
         timeout = float(budget_seconds if budget_seconds is not None else config.fundamental_fetch_timeout_seconds)
-        if _market_tag(stock_code) != "cn" or _is_etf_code(stock_code):
+        if _market_tag(stock_code) != "vn" or _is_etf_code(stock_code):
             return self._build_fundamental_block(
                 "not_supported",
                 {},
@@ -2104,7 +2061,7 @@ class DataFetcherManager:
         config = get_config()
         stock_code = normalize_stock_code(stock_code)
         timeout = float(budget_seconds if budget_seconds is not None else config.fundamental_fetch_timeout_seconds)
-        if _market_tag(stock_code) != "cn" or _is_etf_code(stock_code):
+        if _market_tag(stock_code) != "vn" or _is_etf_code(stock_code):
             return self._build_fundamental_block(
                 "not_supported",
                 {},
