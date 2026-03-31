@@ -11,13 +11,13 @@ sang **chỉ phục vụ thị trường chứng khoán Việt Nam (HOSE)**.
 ## 2. Quyết định đã chốt (Brainstorm Q&A)
 
 ### Q1: Nguồn dữ liệu
-- **Quyết định:** Kết hợp `vnstock` + `TCBS` + fallback
+- **Quyết định:** Kết hợp `vnstock` (cần chốt version API/vnstock3) + `TCBS` + fallback (VNDirect / FireAnt)
 - **Thay thế:** efinance, akshare, tushare, pytdx, baostock, yfinance, tickflow → tất cả bị loại bỏ
 - **Mô hình:** Giữ nguyên kiến trúc multi-source priority (Strategy Pattern trong `data_provider/`)
 
 ### Q2: Sàn giao dịch
-- **Quyết định:** Chỉ HOSE (VN30 + mid-cap)
-- **Không làm:** HNX, UPCOM (tạm thời, có thể mở rộng sau)
+- **Quyết định:** Tạm thời ưu tiên HOSE (VN30 + mid-cap) và HNX (các tập cổ phiếu có thanh khoản lớn)
+- **Không làm:** UPCOM (tạm thời bỏ qua do biên độ 15% và điều kiện niêm yết lỏng lẻo, dễ làm nhiễu data)
 - **Ảnh hưởng:** `trading_calendar.py`, `market_context.py`, `market_profile.py`
 
 ### Q3: Ngôn ngữ
@@ -34,10 +34,10 @@ sang **chỉ phục vụ thị trường chứng khoán Việt Nam (HOSE)**.
 ### Q5: Chiến lược giao dịch
 - **Quyết định:** Chuyển đổi 11 YAML hiện có + thêm chiến lược VN-specific
 - **Lưu ý đặc thù VN:**
-  - Giới hạn T+2 (không T+0)
+  - Giới hạn T+2.5 (cổ phiếu mua T+0 sẽ về tài khoản 13h00 ngày T+2, chỉ bán được phiên chiều T+2)
   - Biên độ giá: +/-7% (HOSE), +/-10% (HNX)
-  - Không có short selling phổ biến
-  - Không có margin phổ biến cho retail
+  - Không có short selling hợp pháp theo quy định chung
+  - Tạm bỏ qua logic Margin để đơn giản hệ thống Phase 1 (thực tế retail VN dùng margin rất nhiều nhưng call margin phức tạp)
   - Khối lượng lô chẵn 100 cổ phiếu
 - **Chiến lược VN-specific cần thêm:**
   - VN30 rotation (xoay vòng cổ phiếu VN30)
@@ -49,12 +49,12 @@ sang **chỉ phục vụ thị trường chứng khoán Việt Nam (HOSE)**.
 - **Quyết định:** VN-INDEX + VN30
 - **Chỉ số:** `VNINDEX`, `VN30`
 - **Sector:** Ngân hàng, BĐS, Thép, Bán lẻ, Công nghệ
-- **Nguồn tin:** CafeF, VnExpress, StockBiz
+- **Nguồn tin:** CafeF, VnExpress, Vietstock (chuyên sâu BCTC/cổ tức), FireAnt (có API REST JSON)
 
 ### Q7: Định dạng mã CK
-- **Quyết định:** 3 ký tự chữ (VCB, FPT, VNM...)
-- **Logic detect:** Khác hoàn toàn format 6 số (A-share TQ), 5 số + HK prefix, 1-5 chữ cái US
-- **Ví dụ:** VCB, FPT, VNM, HPG, MWN, VIC, TCB, MBB, CTG, BID, PNJ, REE, GAS, PLX
+- **Quyết định:** Hỗ trợ 3 ký tự (Cổ phiếu) và 6-8 ký tự (Chứng chỉ quỹ ETF, ví dụ: E1VFVN30)
+- **Logic detect:** Dùng Regex thay vì fix cứng 3 ký tự, khác hoàn toàn format 6 số (A-share TQ), 5 số + HK prefix, 1-5 chữ cái US
+- **Ví dụ:** Cổ phiếu (VCB, FPT, VNM...), ETF (E1VFVN30, FUEVFVND)
 
 ## 3. Danh sách module cần thay đổi
 
@@ -145,8 +145,8 @@ sang **chỉ phục vụ thị trường chứng khoán Việt Nam (HOSE)**.
 
 ## 4. Assumptions
 
-1. `vnstock` library đủ đáp ứng OHLCV, realtime, fundamentals, cổ tức
-2. TCBS API public vẫn available và ổn định
+1. `vnstock` library (cần đối chiếu bản hiện hành vs `vnstock3`) đủ đáp ứng OHLCV, realtime, fundamentals, cổ tức
+2. TCBS API public vẫn available (hoặc sẵn sàng sang fallback VNDirect Dboard / FireAnt)
 3. Không cần HNX/UPCOM ngay (có thể mở rộng sau)
 4. Zalo có webhook/bot API khả dụng (cần xác minh)
 5. User đã cài `vnstock` (`pip install vnstock`)
@@ -158,15 +158,15 @@ sang **chỉ phục vụ thị trường chứng khoán Việt Nam (HOSE)**.
 | vnstock API thay đổi | Data fetch fail | TCBS fallback + cache |
 | TCBS rate limit | Realtime delay | Batch request, cache |
 | Thiếu data lịch VN | Backtest kém chính xác | Dùng vnstock history API |
-| Zalo API hạn chế | Thông báo không đến | Telegram/Discord backup |
+| Zalo API hạn chế (Zalo OA thu phí push) | Thông báo không đến, chi phí cao | Ưu tiên số 1 cho Telegram/Discord |
 | Strategies VN không hiệu quả | Sai tín hiệu | Backtest kỹ trước khi deploy |
 
 ## 6. Decision Log
 
 | # | Quyết định | Alternatives | Lý do |
 |---|-----------|-------------|-------|
-| 1 | vnstock + TCBS + fallback | efinance, akshare, tự build | Ổn định, cộng đồng VN dùng phổ biến |
-| 2 | Chỉ HOSE | HOSE+HNX, Toàn sàn | Đơn giản hóa phase 1, HNX mở rộng sau |
+| 1 | vnstock + TCBS + fallback (VNDirect) | efinance, akshare, tự build | Ổn định, cộng đồng VN dùng phổ biến |
+| 2 | HOSE + HNX | Toàn sàn (cả UPCOM) | Đơn giản hóa phase 1, data HNX và HOSE chung cấu trúc |
 | 3 | Báo cáo tiếng Việt | Song ngữ, tiếng Anh | Người dùng VN end-user |
 | 4 | Zalo + Telegram + Discord | Giữ WeChat/Feishu | Phù hợp thói quen người VN |
 | 5 | Chuyển đổi + thêm strategies | Viết mới hoàn toàn | Tận dụng code cũ, giảm effort |
@@ -175,4 +175,5 @@ sang **chỉ phục vụ thị trường chứng khoán Việt Nam (HOSE)**.
 
 ---
 
-*Next steps: Chờ user xác nhận Understanding Lock → Chia nhỏ implementation phases → Bắt đầu code*
+*Trạng thái hiện tại: Đã cập nhật chuyên sâu thị trường VN (T+2.5, HNX, ETF, Data source)*
+*Next steps: Chờ user xác nhận Understanding Lock → Lên danh sách Task Breakdown → Bắt đầu code*
