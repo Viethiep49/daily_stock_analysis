@@ -1,13 +1,12 @@
 # -*- coding: utf-8 -*-
 """
 ===================================
-股票智能分析系统 - 大盘复盘模块（支持 A 股 / 美股）
+Market Review — Vietnam Market (VNINDEX + VN30)
 ===================================
 
-职责：
-1. 根据 MARKET_REVIEW_REGION 配置选择市场区域（cn / us / both）
-2. 执行大盘复盘分析并生成复盘报告
-3. 保存和发送复盘报告
+Runs the daily market review for Vietnam's HOSE/HNX exchanges.
+Fetches VNINDEX and VN30 data, calls the AI analyzer,
+saves the report, and sends notifications.
 """
 
 import logging
@@ -19,7 +18,6 @@ from src.notification import NotificationService
 from src.market_analyzer import MarketAnalyzer
 from src.search_service import SearchService
 from src.analyzer import GeminiAnalyzer
-
 
 logger = logging.getLogger(__name__)
 
@@ -33,87 +31,65 @@ def run_market_review(
     override_region: Optional[str] = None,
 ) -> Optional[str]:
     """
-    执行大盘复盘分析
+    Run the Vietnam daily market review (VNINDEX + VN30).
 
     Args:
-        notifier: 通知服务
-        analyzer: AI分析器（可选）
-        search_service: 搜索服务（可选）
-        send_notification: 是否发送通知
-        merge_notification: 是否合并推送（跳过本次推送，由 main 层合并个股+大盘后统一发送，Issue #190）
-        override_region: 覆盖 config 的 market_review_region（Issue #373 交易日过滤后有效子集）
+        notifier:           Notification service instance.
+        analyzer:           AI analyzer (optional).
+        search_service:     Search/news service (optional).
+        send_notification:  Whether to push the report.
+        merge_notification: When True, skip standalone push; let the caller
+                            combine individual-stock + market results (Issue #190).
+        override_region:    Effective region after trading-day filter (Issue #373).
+                            Ignored if not 'vn' or None — always runs VN review.
 
     Returns:
-        复盘报告文本
+        Report text string, or None on failure.
     """
-    logger.info("开始执行大盘复盘分析...")
+    logger.info("[MarketReview] Starting Vietnam market review (VNINDEX + VN30)...")
     config = get_config()
-    region = (
-        override_region
-        if override_region is not None
-        else (getattr(config, 'market_review_region', 'cn') or 'cn')
-    )
-    if region not in ('cn', 'us', 'both'):
-        region = 'cn'
+
+    # Respect trading-day filter: empty string means market is closed today
+    effective_region = override_region if override_region is not None else "vn"
+    if effective_region == "":
+        logger.info("[MarketReview] Vietnam market is closed today — skipping review.")
+        return None
 
     try:
-        if region == 'both':
-            # 顺序执行 A 股 + 美股，合并报告
-            cn_analyzer = MarketAnalyzer(
-                search_service=search_service, analyzer=analyzer, region='cn'
-            )
-            us_analyzer = MarketAnalyzer(
-                search_service=search_service, analyzer=analyzer, region='us'
-            )
-            logger.info("生成 A 股大盘复盘报告...")
-            cn_report = cn_analyzer.run_daily_review()
-            logger.info("生成美股大盘复盘报告...")
-            us_report = us_analyzer.run_daily_review()
-            review_report = ''
-            if cn_report:
-                review_report = f"# A股大盘复盘\n\n{cn_report}"
-            if us_report:
-                if review_report:
-                    review_report += "\n\n---\n\n> 以下为美股大盘复盘\n\n"
-                review_report += f"# 美股大盘复盘\n\n{us_report}"
-            if not review_report:
-                review_report = None
-        else:
-            market_analyzer = MarketAnalyzer(
-                search_service=search_service,
-                analyzer=analyzer,
-                region=region,
-            )
-            review_report = market_analyzer.run_daily_review()
-        
-        if review_report:
-            # 保存报告到文件
-            date_str = datetime.now().strftime('%Y%m%d')
-            report_filename = f"market_review_{date_str}.md"
-            filepath = notifier.save_report_to_file(
-                f"# 🎯 大盘复盘\n\n{review_report}", 
-                report_filename
-            )
-            logger.info(f"大盘复盘报告已保存: {filepath}")
-            
-            # 推送通知（合并模式下跳过，由 main 层统一发送）
-            if merge_notification and send_notification:
-                logger.info("合并推送模式：跳过大盘复盘单独推送，将在个股+大盘复盘后统一发送")
-            elif send_notification and notifier.is_available():
-                # 添加标题
-                report_content = f"🎯 大盘复盘\n\n{review_report}"
+        vn_analyzer = MarketAnalyzer(
+            search_service=search_service,
+            analyzer=analyzer,
+            region="vn",
+        )
+        review_report = vn_analyzer.run_daily_review()
 
-                success = notifier.send(report_content, email_send_to_all=True)
-                if success:
-                    logger.info("大盘复盘推送成功")
+        if review_report:
+            # Save report to file
+            date_str = datetime.now().strftime("%Y%m%d")
+            report_filename = f"market_review_vn_{date_str}.md"
+            filepath = notifier.save_report_to_file(
+                f"# 📊 Thị Trường Việt Nam — Tổng Kết Ngày\n\n{review_report}",
+                report_filename,
+            )
+            logger.info("[MarketReview] Report saved: %s", filepath)
+
+            if merge_notification and send_notification:
+                logger.info(
+                    "[MarketReview] Merge mode: skipping standalone push; "
+                    "will be combined with individual-stock report."
+                )
+            elif send_notification and notifier.is_available():
+                report_content = f"📊 Thị Trường VN hôm nay\n\n{review_report}"
+                if notifier.send(report_content, email_send_to_all=True):
+                    logger.info("[MarketReview] Notification sent successfully.")
                 else:
-                    logger.warning("大盘复盘推送失败")
+                    logger.warning("[MarketReview] Notification send failed.")
             elif not send_notification:
-                logger.info("已跳过推送通知 (--no-notify)")
-            
+                logger.info("[MarketReview] Notification skipped (--no-notify).")
+
             return review_report
-        
-    except Exception as e:
-        logger.error(f"大盘复盘分析失败: {e}")
-    
+
+    except Exception as exc:
+        logger.error("[MarketReview] Failed: %s", exc)
+
     return None
