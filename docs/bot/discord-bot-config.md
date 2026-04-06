@@ -1,108 +1,108 @@
-# Discord机器人配置
+# Cấu Hình Robot Discord
 
-## Discord机器人
-Discord机器人接收消息需要使用Discord Developer Portal创建机器人应用
+## Robot Discord
+Robot Discord nhận tin nhắn cần tạo ứng dụng robot qua Discord Developer Portal
 https://discord.com/developers/applications
 
-Discord机器人支持两种消息发送方式：
-1. **Webhook模式**：配置简单，权限低，适合只需要发送消息的场景
-2. **Bot API模式**：权限高，支持接收命令，需要配置Bot Token和频道ID
+Robot Discord hỗ trợ hai cách gửi tin nhắn:
+1. **Chế độ Webhook**: Cấu hình đơn giản, quyền thấp, phù hợp chỉ cần gửi tin nhắn
+2. **Chế độ Bot API**: Quyền cao, hỗ trợ nhận lệnh, cần cấu hình Bot Token và Channel ID
 
-## 创建Discord机器人
+## Tạo Robot Discord
 
-### 1. 登录Discord Developer Portal
-访问 https://discord.com/developers/applications 并使用你的Discord账号登录
+### 1. Đăng nhập Discord Developer Portal
+Truy cập https://discord.com/developers/applications và đăng nhập bằng tài khoản Discord
 
-### 2. 创建应用
-点击"New Application"按钮，输入应用名称（例如：A股智能分析机器人），然后点击"Create"
+### 2. Tạo ứng dụng
+Nhấn nút "New Application", nhập tên ứng dụng (ví dụ: A股智能分析机器人), sau đó nhấn "Create"
 
-### 3. 配置机器人
-在左侧导航栏中点击"Bot"，然后点击"Add Bot"按钮，确认添加
+### 3. Cấu hình robot
+Trong menu trái nhấn "Bot", sau đó nhấn "Add Bot", xác nhận thêm
 
-### 4. 获取Bot Token
-在Bot页面，点击"Reset Token"按钮，然后复制生成的Token（这是你的`DISCORD_BOT_TOKEN`）
+### 4. Lấy Bot Token
+Trong trang Bot, nhấn "Reset Token", sau đó sao chép Token tạo ra (đây là `DISCORD_BOT_TOKEN` của bạn)
 
-### 5. 配置权限
-在Bot页面的"Privileged Gateway Intents"部分，开启以下选项：
+### 5. Cấu hình quyền
+Trong phần "Privileged Gateway Intents" của trang Bot, bật các tùy chọn:
 - Presence Intent
 - Server Members Intent
 - Message Content Intent
 
-### 6. 添加到服务器
-1. 在左侧导航栏中点击"OAuth2" > "URL Generator"
-2. 在"Scopes"中选择：
+### 6. Thêm vào server
+1. Trong menu trái nhấn "OAuth2" > "URL Generator"
+2. Trong "Scopes" chọn:
    - `bot`
    - `applications.commands`
-3. 在"Bot Permissions"中选择：
+3. Trong "Bot Permissions" chọn:
    - Send Messages
    - Embed Links
    - Attach Files
    - Read Message History
    - Use Slash Commands
-4. 复制生成的URL，在浏览器中打开，选择要添加机器人的服务器
+4. Sao chép URL tạo ra, mở trong trình duyệt, chọn server muốn thêm robot
 
-### 7. 获取频道ID
-1. 在Discord客户端中，开启开发者模式：设置 > 高级 > 开发者模式
-2. 右键点击你想要机器人发送消息的频道，选择"Copy ID"（这是你的`DISCORD_MAIN_CHANNEL_ID`）
+### 7. Lấy Channel ID
+1. Trong Discord client, bật chế độ developer: Settings > Advanced > Developer Mode
+2. Phải chuột vào kênh muốn robot gửi tin nhắn, chọn "Copy ID" (đây là `DISCORD_MAIN_CHANNEL_ID` của bạn)
 
-## 配置环境变量
+## Cấu Hình Biến Môi Trường
 
-将以下配置添加到你的`.env`文件中：
+Thêm các cấu hình sau vào file `.env`:
 
 ```env
-# Discord 机器人配置
+# Cấu hình robot Discord
 DISCORD_BOT_TOKEN=your-discord-bot-token
 DISCORD_MAIN_CHANNEL_ID=your-channel-id
-DISCORD_WEBHOOK_URL=your-webhook-url (可选)
+DISCORD_WEBHOOK_URL=your-webhook-url (tùy chọn)
 DISCORD_BOT_STATUS=A股智能分析 | /help
 ```
 
-## Webhook模式配置（可选）
+## Cấu Hình Chế Độ Webhook (tùy chọn)
 
-如果你只想使用Webhook模式发送消息，不需要Bot Token，可以按照以下步骤配置：
+Nếu chỉ muốn dùng chế độ Webhook gửi tin nhắn, không cần Bot Token, làm theo các bước:
 
-1. 右键点击频道，选择"编辑频道"
-2. 点击"集成" > "Webhooks" > "新建Webhook"
-3. 配置Webhook名称和头像
-4. 复制Webhook URL（这是你的`DISCORD_WEBHOOK_URL`）
+1. Phải chuột vào kênh, chọn "Edit Channel"
+2. Nhấn "Integrations" > "Webhooks" > "New Webhook"
+3. Cấu hình tên và avatar Webhook
+4. Sao chép Webhook URL (đây là `DISCORD_WEBHOOK_URL` của bạn)
 
-## 支持的命令
+## Lệnh Hỗ Trợ
 
-Discord机器人支持以下Slash命令：
+Robot Discord hỗ trợ các lệnh Slash sau:
 
-1. `/analyze <stock_code> [full_report]` - 分析指定股票代码
-   - `stock_code`: 股票代码，如 600519
-   - `full_report`: 可选，是否生成完整报告（包含大盘）
+1. `/analyze <stock_code> [full_report]` - Phân tích theo mã cổ phiếu
+   - `stock_code`: Mã cổ phiếu, vd 600519
+   - `full_report`: Tùy chọn, có tạo báo cáo đầy đủ (bao gồm大盘) không
 
-2. `/market_review` - 获取大盘复盘报告
+2. `/market_review` - Lấy báo cáo复盘大盘
 
-3. `/help` - 查看帮助信息
+3. `/help` - Xem thông tin trợ giúp
 
-## 测试机器人
+## Kiểm Tra Robot
 
-1. 确保机器人已成功添加到你的服务器
-2. 在频道中输入`/help`，机器人会返回帮助信息
-3. 输入`/analyze 600519`测试股票分析功能
-4. 输入`/market_review`测试大盘复盘功能
+1. Đảm bảo robot đã thêm thành công vào server
+2. Nhập `/help` trong kênh, robot sẽ trả về thông tin trợ giúp
+3. Nhập `/analyze 600519` để kiểm tra chức năng phân tích cổ phiếu
+4. Nhập `/market_review` để kiểm tra chức năng复盘大盘
 
-## 注意事项
+## Lưu Ý
 
-1. 确保你的机器人有足够的权限在频道中发送消息和使用Slash命令
-2. 定期更新你的Bot Token，确保安全性
-3. 不要将你的Bot Token分享给任何人
-4. 如果机器人没有响应，检查：
-   - Bot Token是否正确
-   - 频道ID是否正确
-   - 机器人是否在线
-   - 机器人是否有消息发送权限
+1. Đảm bảo robot có đủ quyền gửi tin nhắn và dùng Slash command trong kênh
+2. Định kỳ cập nhật Bot Token, đảm bảo an toàn
+3. Không chia sẻ Bot Token với bất kỳ ai
+4. Nếu robot không phản hồi, kiểm tra:
+   - Bot Token có đúng không
+   - Channel ID có đúng không
+   - Robot có online không
+   - Robot có quyền gửi tin nhắn không
 
-## 故障排除
+## Xử Lý Sự Cố
 
-- **机器人不响应命令**：检查Bot Token和频道ID是否正确，确保机器人已添加到服务器
-- **Slash命令不显示**：等待一段时间（Discord需要同步命令），或重新添加机器人
-- **消息发送失败**：检查频道权限，确保机器人有发送消息的权限
+- **Robot không phản hồi lệnh**: Kiểm tra Bot Token và Channel ID có đúng không, đảm bảo robot đã thêm vào server
+- **Slash command không hiển thị**: Đợi một thời gian (Discord cần đồng bộ lệnh), hoặc thêm lại robot
+- **Gửi tin nhắn thất bại**: Kiểm tra quyền kênh, đảm bảo robot có quyền gửi tin nhắn
 
-## 相关链接
+## Link Liên Quan
 
 - [Discord Developer Portal](https://discord.com/developers/applications)
 - [Discord Bot Documentation](https://discordpy.readthedocs.io/en/stable/)

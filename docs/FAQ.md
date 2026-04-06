@@ -1,249 +1,249 @@
-# ❓ 常见问题解答 (FAQ)
+# ❓ Câu Hỏi Thường Gặp (FAQ)
 
-本文档整理了用户在使用过程中遇到的常见问题及解决方案。
+Tài liệu này tổng hợp các vấn đề thường gặp khi sử dụng và cách khắc phục.
 
 ---
 
-## 📊 数据相关
+## 📊 Liên Quan Đến Dữ Liệu
 
-### Q1: 美股代码（如 AMD, AAPL）分析时价格显示不正确？
+### Q1: Giá cổ phiếu Mỹ (như AMD, AAPL) hiển thị không chính xác khi phân tích?
 
-**现象**：输入美股代码后，显示的价格明显不对（如 AMD 显示 7.33 元），或被误识别为 A 股。
+**Hiện tượng**: Sau khi nhập mã cổ phiếu Mỹ, giá hiển thị sai rõ rệt (ví dụ AMD hiển thị 7.33 tệ), hoặc bị nhận diện nhầm thành cổ phiếu A-share Trung Quốc.
 
-**原因**：早期版本代码匹配逻辑优先尝试国内 A 股规则，导致代码冲突。
+**Nguyên nhân**: Các phiên bản cũ ưu tiên thử quy tắc cổ phiếu A-share Trung Quốc trước, dẫn đến xung đột mã.
 
-**解决方案**：
-1. 已在 v2.3.0 修复，系统现在支持美股代码自动识别
-2. 如仍有问题，可在 `.env` 中设置：
+**Giải pháp**:
+1. Đã sửa từ v2.3.0, hệ thống giờ hỗ trợ tự động nhận diện mã cổ phiếu Mỹ
+2. Nếu vẫn gặp vấn đề, có thể cài đặt trong `.env`:
    ```bash
    YFINANCE_PRIORITY=0
    ```
-   这将优先使用 Yahoo Finance 数据源获取美股数据
+   Điều này sẽ ưu tiên sử dụng nguồn dữ liệu Yahoo Finance cho cổ phiếu Mỹ
 
-> 📌 相关 Issue: [#153](https://github.com/ZhuLinsen/daily_stock_analysis/issues/153)
+> 📌 Issue liên quan: [#153](https://github.com/ZhuLinsen/daily_stock_analysis/issues/153)
 
 ---
 
-### Q2: 报告中"量比"字段显示为空或 N/A？
+### Q2: Trường "lượng tỷ" (volume ratio) trong báo cáo hiển thị trống hoặc N/A?
 
-**现象**：分析报告中量比数据缺失，影响 AI 对缩放量的判断。
+**Hiện tượng**: Báo cáo phân tích thiếu dữ liệu lượng tỷ, ảnh hưởng đến đánh giá của AI về khối lượng giao dịch.
 
-**原因**：默认的某些实时行情源（如新浪接口）不提供量比字段。
+**Nguyên nhân**: Một số nguồn dữ liệu realtime mặc định (như API Sina) không cung cấp trường lượng tỷ.
 
-**解决方案**：
-1. 已在 v2.3.0 修复，腾讯接口现已支持量比解析
-2. 推荐配置实时行情源优先级：
+**Giải pháp**:
+1. Đã sửa từ v2.3.0, API Tencent giờ đã hỗ trợ phân tích lượng tỷ
+2. Khuyến nghị cấu hình ưu tiên nguồn dữ liệu realtime:
    ```bash
    REALTIME_SOURCE_PRIORITY=tencent,akshare_sina,efinance,akshare_em
    ```
-3. 系统已内置 5 日均量计算作为兜底逻辑
+3. Hệ thống đã tích hợp sẵn logic tính trung bình khối lượng 5 ngày làm phương án dự phòng
 
-> 📌 相关 Issue: [#155](https://github.com/ZhuLinsen/daily_stock_analysis/issues/155)
-
----
-
-### Q3: Tushare 获取数据失败，提示 Token 不对？
-
-**现象**：日志显示 `Tushare 获取数据失败: 您的token不对，请确认`
-
-**解决方案**：
-1. **无 Tushare 账号**：无需配置 `TUSHARE_TOKEN`，系统会自动使用免费数据源（AkShare、Efinance）
-2. **有 Tushare 账号**：确认 Token 是否正确，可在 [Tushare Pro](https://tushare.pro/weborder/#/login?reg=834638 ) 个人中心查看
-3. 本项目所有核心功能均可在无 Tushare 的情况下正常运行
+> 📌 Issue liên quan: [#155](https://github.com/ZhuLinsen/daily_stock_analysis/issues/155)
 
 ---
 
-### Q4: 数据获取被限流或返回为空？
+### Q3: Tushare không lấy được dữ liệu, báo lỗi Token sai?
 
-**现象**：日志显示 `熔断器触发` 或数据返回 `None`，或出现 `RemoteDisconnected`、`push2his.eastmoney.com` 连接被关闭等
+**Hiện tượng**: Log hiển thị `Tushare 获取数据失败: 您的token不对，请确认`
 
-**原因**：免费数据源（东方财富、新浪等）有反爬机制，短时间大量请求会被限流。
-
-**解决方案**：
-1. 系统已内置多数据源自动切换和熔断保护
-2. 减少自选股数量，或增加请求间隔
-3. 避免频繁手动触发分析
-4. 若东财接口频繁失败，可设置 `ENABLE_EASTMONEY_PATCH=true` 启用东财补丁（注入 NID 令牌与随机 User-Agent，降低被限流概率）
-5. 将 `MAX_WORKERS=1` 改为串行获取，减少对东财的并发压力
+**Giải pháp**:
+1. **Không có tài khoản Tushare**: Không cần cấu hình `TUSHARE_TOKEN`, hệ thống sẽ tự động sử dụng nguồn dữ liệu miễn phí (AkShare, Efinance)
+2. **Có tài khoản Tushare**: Xác nhận Token có đúng không, có thể kiểm tra tại trung tâm cá nhân [Tushare Pro](https://tushare.pro/weborder/#/login?reg=834638)
+3. Tất cả chức năng cốt lõi của dự án đều có thể chạy bình thường mà không cần Tushare
 
 ---
 
-## ⚙️ 配置相关
+### Q4: Lấy dữ liệu bị giới hạn tốc độ hoặc trả về rỗng?
 
-### Q5: GitHub Actions 运行失败，提示找不到环境变量？
+**Hiện tượng**: Log hiển thị `熔断器触发` (kích hoạt bộ ngắt mạch) hoặc dữ liệu trả về `None`, hoặc xuất hiện lỗi `RemoteDisconnected`, kết nối đến `push2his.eastmoney.com` bị đóng
 
-**现象**：Actions 日志显示 `GEMINI_API_KEY` 或 `STOCK_LIST` 未定义
+**Nguyên nhân**: Các nguồn dữ liệu miễn phí (Đông Phương Tài Phú, Sina...) có cơ chế chống cào, gửi quá nhiều request trong thời gian ngắn sẽ bị giới hạn.
 
-**原因**：GitHub 区分 `Secrets`（加密）和 `Variables`（普通变量），配置位置不对会导致读取失败。
+**Giải pháp**:
+1. Hệ thống đã tích hợp sẵn chuyển đổi tự động đa nguồn dữ liệu và bảo vệ ngắt mạch
+2. Giảm số lượng cổ phiếu tự chọn, hoặc tăng khoảng cách giữa các request
+3. Tránh kích hoạt phân tích thủ công quá thường xuyên
+4. Nếu API Đông Phương liên tục thất bại, có thể đặt `ENABLE_EASTMONEY_PATCH=true` để bật bản vá (tiêm token NID và User-Agent ngẫu nhiên, giảm xác suất bị giới hạn)
+5. Đặt `MAX_WORKERS=1` để chuyển sang chế độ tuần tự, giảm áp lực并发 lên Đông Phương
 
-**解决方案**：
-1. 进入仓库 `Settings` → `Secrets and variables` → `Actions`
-2. **Secrets**（点击 `New repository secret`）：存放敏感信息
+---
+
+## ⚙️ Liên Quan Đến Cấu Hình
+
+### Q5: GitHub Actions chạy thất bại, báo không tìm thấy biến môi trường?
+
+**Hiện tượng**: Log Actions hiển thị `GEMINI_API_KEY` hoặc `STOCK_LIST` chưa được định nghĩa
+
+**Nguyên nhân**: GitHub phân biệt `Secrets` (mã hóa) và `Variables` (biến thông thường), cấu hình sai vị trí sẽ không đọc được.
+
+**Giải pháp**:
+1. Vào kho `Settings` → `Secrets and variables` → `Actions`
+2. **Secrets** (nhấn `New repository secret`): Lưu thông tin nhạy cảm
    - `GEMINI_API_KEY`
    - `OPENAI_API_KEY`
    - `TELEGRAM_BOT_TOKEN`
-   - 各类 Webhook URL
-3. **Variables**（点击 `Variables` 标签）：存放非敏感配置
+   - Các loại Webhook URL
+3. **Variables** (nhấn tab `Variables`): Lưu cấu hình không nhạy cảm
    - `STOCK_LIST`
    - `GEMINI_MODEL`
    - `REPORT_TYPE`
 
 ---
 
-### Q6: 修改 .env 文件后配置没有生效？
+### Q6: Sửa file .env nhưng cấu hình không có hiệu lực?
 
-**解决方案**：
-1. 确保 `.env` 文件位于项目根目录
-2. **Docker 部署**：修改后需重启容器
+**Giải pháp**:
+1. Đảm bảo file `.env` nằm ở thư mục gốc dự án
+2. **Triển khai Docker**: Sau khi sửa cần restart container
    ```bash
    docker-compose down && docker-compose up -d
    ```
-3. **GitHub Actions**：`.env` 文件不生效，必须在 Secrets/Variables 中配置
-4. 检查是否有多个 `.env` 文件（如 `.env.local`）导致覆盖
+3. **GitHub Actions**: File `.env` không có hiệu lực, phải cấu hình trong Secrets/Variables
+4. Kiểm tra xem có nhiều file `.env` (như `.env.local`) gây ghi đè không
 
 ---
 
-### Q7: 如何配置代理访问 Gemini/OpenAI API？
+### Q7: Cấu hình proxy để truy cập Gemini/OpenAI API như thế nào?
 
-**解决方案**：
+**Giải pháp**:
 
-在 `.env` 中配置：
+Cấu hình trong `.env`:
 ```bash
 USE_PROXY=true
 PROXY_HOST=127.0.0.1
 PROXY_PORT=10809
 ```
 
-> ⚠️ 注意：代理配置仅对本地运行生效，GitHub Actions 环境无需配置代理。
+> ⚠️ Lưu ý: Cấu hình proxy chỉ có hiệu lực khi chạy cục bộ, môi trường GitHub Actions không cần cấu hình proxy.
 
 ---
 
-### LLM 配置常见问题
+### Câu Hỏi Thường Gặp Về Cấu Hình LLM
 
-> 完整说明见 [LLM 配置指南](LLM_CONFIG_GUIDE.md)。
+> Xem chi tiết tại [Hướng Dẫn Cấu Hình LLM](LLM_CONFIG_GUIDE.md).
 
-**Q: 配置了 GEMINI_API_KEY 和 LLM_CHANNELS，为什么只用渠道？**
+**Q: Đã cấu hình GEMINI_API_KEY và LLM_CHANNELS, tại sao hệ thống chỉ dùng kênh?**
 
-系统按优先级只取一种：`LITELLM_CONFIG` (YAML) > `LLM_CHANNELS` > legacy keys。一旦配置了渠道或 YAML，legacy 区域（`GEMINI_API_KEY` 等）不参与解析。
+Hệ thống chỉ lấy một loại theo thứ tự ưu tiên: `LITELLM_CONFIG` (YAML) > `LLM_CHANNELS` > legacy keys. Một khi đã cấu hình kênh hoặc YAML, khu vực legacy (`GEMINI_API_KEY`...) sẽ không tham gia phân tích.
 
-**Q: test_env 输出 ✗ 未配置任何 LLM 怎么办？**
+**Q: test_env xuất ✗ chưa cấu hình bất kỳ LLM nào thì làm sao?**
 
-配置 `LITELLM_CONFIG` / `LLM_CHANNELS` 或至少一个 `*_API_KEY`（如 `GEMINI_API_KEY`、`DEEPSEEK_API_KEY`、`AIHUBMIX_KEY`）。运行 `python test_env.py --config` 校验配置，`python test_env.py --llm` 实际调用 API 测试。
+Cấu hình `LITELLM_CONFIG` / `LLM_CHANNELS` hoặc ít nhất một `*_API_KEY` (như `GEMINI_API_KEY`, `DEEPSEEK_API_KEY`, `AIHUBMIX_KEY`). Chạy `python test_env.py --config` để xác thực cấu hình, `python test_env.py --llm` để gọi API thực tế kiểm tra.
 
-**Q: 如何同时使用多个模型（如 AIHubmix + DeepSeek + Gemini）？**
+**Q: Làm sao dùng đồng thời nhiều mô hình (như AIHubmix + DeepSeek + Gemini)?**
 
-使用渠道模式：设置 `LLM_CHANNELS=aihubmix,deepseek,gemini`，并配置各渠道的 `LLM_{NAME}_BASE_URL`、`LLM_{NAME}_API_KEY`、`LLM_{NAME}_MODELS`。也可在 Web 设置页 → AI 模型 → 渠道编辑器中可视化配置。
-
----
-
-## 📱 推送相关
-
-### Q8: 机器人推送失败，提示消息过长？
-
-**现象**：分析成功但未收到推送，日志显示 400 错误或 `Message too long`
-
-**原因**：不同平台消息长度限制不同：
-- 企业微信：4KB
-- 飞书：20KB
-- 钉钉：20KB
-
-**解决方案**：
-1. **自动分块**：最新版本已实现长消息自动切割
-2. **单股推送模式**：设置 `SINGLE_STOCK_NOTIFY=true`，每分析完一只股票立即推送
-3. **精简报告**：设置 `REPORT_TYPE=simple` 使用精简格式
+Sử dụng chế độ kênh: Đặt `LLM_CHANNELS=aihubmix,deepseek,gemini`, và cấu hình `LLM_{NAME}_BASE_URL`, `LLM_{NAME}_API_KEY`, `LLM_{NAME}_MODELS` cho từng kênh. Cũng có thể cấu hình trực quan tại trang Settings → AI Models → Channel Editor trên Web.
 
 ---
 
-### Q9: Telegram 推送收不到消息？
+## 📱 Liên Quan Đến Đẩy Tin
 
-**解决方案**：
-1. 确认 `TELEGRAM_BOT_TOKEN` 和 `TELEGRAM_CHAT_ID` 都已配置
-2. 获取 Chat ID 方法：
-   - 给 Bot 发送任意消息
-   - 访问 `https://api.telegram.org/bot<TOKEN>/getUpdates`
-   - 在返回的 JSON 中找到 `chat.id`
-3. 确保 Bot 已被添加到目标群组（如果是群聊）
-4. 本地运行时需要能访问 Telegram API（可能需要代理）
+### Q8: Bot đẩy tin thất bại, báo message quá dài?
+
+**Hiện tượng**: Phân tích thành công nhưng không nhận được đẩy tin, log báo lỗi 400 hoặc `Message too long`
+
+**Nguyên nhân**: Các nền tảng khác nhau có giới hạn độ dài tin nhắn khác nhau:
+- WeChat Work: 4KB
+- Feishu: 20KB
+- DingTalk: 20KB
+
+**Giải pháp**:
+1. **Tự động chia nhỏ**: Phiên bản mới nhất đã hỗ trợ tự động cắt tin nhắn dài
+2. **Chế độ đẩy từng mã**: Đặt `SINGLE_STOCK_NOTIFY=true`, đẩy tin ngay sau khi phân tích xong mỗi mã
+3. **Báo cáo rút gọn**: Đặt `REPORT_TYPE=simple` để dùng định dạng精简
 
 ---
 
-### Q10: 企业微信 Markdown 格式显示不正常？
+### Q9: Telegram không nhận được tin nhắn đẩy?
 
-**解决方案**：
-1. 企业微信对 Markdown 支持有限，可尝试设置：
+**Giải pháp**:
+1. Xác nhận `TELEGRAM_BOT_TOKEN` và `TELEGRAM_CHAT_ID` đã được cấu hình
+2. Cách lấy Chat ID:
+   - Gửi tin nhắn bất kỳ cho Bot
+   - Truy cập `https://api.telegram.org/bot<TOKEN>/getUpdates`
+   - Tìm `chat.id` trong JSON trả về
+3. Đảm bảo Bot đã được thêm vào nhóm đích (nếu là group chat)
+4. Khi chạy cục bộ cần truy cập được Telegram API (có thể cần proxy)
+
+---
+
+### Q10: Định dạng Markdown WeChat Work hiển thị không bình thường?
+
+**Giải pháp**:
+1. WeChat Work hỗ trợ Markdown có hạn, có thể thử đặt:
    ```bash
    WECHAT_MSG_TYPE=text
    ```
-2. 这将发送纯文本格式的消息
+2. Điều này sẽ gửi tin nhắn dạng pure text
 
 ---
 
-## 🤖 AI 模型相关
+## 🤖 Liên Quan Đến Mô Hình AI
 
-### Q11: Gemini API 返回 429 错误（请求过多）？
+### Q11: Gemini API trả về lỗi 429 (Too Many Requests)?
 
-**现象**：日志显示 `Resource has been exhausted` 或 `429 Too Many Requests`
+**Hiện tượng**: Log hiển thị `Resource has been exhausted` hoặc `429 Too Many Requests`
 
-**解决方案**：
-1. Gemini 免费版有速率限制（约 15 RPM）
-2. 减少同时分析的股票数量
-3. 增加请求延迟：
+**Giải pháp**:
+1. Gemini bản miễn phí có giới hạn tốc độ (khoảng 15 RPM)
+2. Giảm số lượng cổ phiếu phân tích đồng thời
+3. Tăng độ trễ giữa các request:
    ```bash
    GEMINI_REQUEST_DELAY=5
    ANALYSIS_DELAY=10
    ```
-4. 或切换到 OpenAI 兼容 API 作为备选
+4. Hoặc chuyển sang OpenAI compatible API làm phương án dự phòng
 
 ---
 
-### Q12: 如何使用 DeepSeek 等国产模型？
+### Q12: Làm sao sử dụng mô hình như DeepSeek?
 
-**配置方法**：
+**Cách cấu hình**:
 
 ```bash
-# 不需要配置 GEMINI_API_KEY
+# Không cần cấu hình GEMINI_API_KEY
 OPENAI_API_KEY=sk-xxxxxxxx
 OPENAI_BASE_URL=https://api.deepseek.com/v1
 OPENAI_MODEL=deepseek-chat
-# 思考模式：deepseek-reasoner、deepseek-r1、qwq 等自动识别；deepseek-chat 系统按模型名自动启用
+# Chế độ suy luận: deepseek-reasoner, deepseek-r1, qwq... tự động nhận diện; deepseek-chat hệ thống tự kích hoạt theo tên mô hình
 ```
 
-支持的模型服务：
+Các dịch vụ mô hình hỗ trợ:
 - DeepSeek: `https://api.deepseek.com/v1`
-- 通义千问: `https://dashscope.aliyuncs.com/compatible-mode/v1`
+- Tongyi Qianwen: `https://dashscope.aliyuncs.com/compatible-mode/v1`
 - Moonshot: `https://api.moonshot.cn/v1`
 
 ---
 
-### Q12b: 如何使用 Ollama 本地模型？
+### Q12b: Làm sao sử dụng mô hình cục bộ Ollama?
 
-**配置方法**：使用 `OLLAMA_API_BASE` + `LITELLM_MODEL`，或渠道模式（`LLM_CHANNELS=ollama` + `LLM_OLLAMA_BASE_URL` + `LLM_OLLAMA_MODELS`）。
+**Cách cấu hình**: Sử dụng `OLLAMA_API_BASE` + `LITELLM_MODEL`, hoặc chế độ kênh (`LLM_CHANNELS=ollama` + `LLM_OLLAMA_BASE_URL` + `LLM_OLLAMA_MODELS`).
 
-**避坑**：不要使用 `OPENAI_BASE_URL` 配置 Ollama，否则会触发 LiteLLM 的 URL 拼接 bug（如 404、`api/generate/api/show`）。详见 [LLM 配置指南](LLM_CONFIG_GUIDE.md) 示例 4 与渠道示例。
+**Tránh lỗi**: Không dùng `OPENAI_BASE_URL` để cấu hình Ollama, nếu không sẽ kích hoạt bug ghép URL của LiteLLM (như 404, `api/generate/api/show`). Xem ví dụ 4 và ví dụ kênh trong [Hướng Dẫn Cấu Hình LLM](LLM_CONFIG_GUIDE.md).
 
 ---
 
-## 🐳 Docker 相关
+## 🐳 Liên Quan Đến Docker
 
-### Q13: Docker 容器启动后立即退出？
+### Q13: Docker container khởi động xong thoát ngay?
 
-**解决方案**：
-1. 查看容器日志：
+**Giải pháp**:
+1. Xem log container:
    ```bash
    docker logs <container_id>
    ```
-2. 常见原因：
-   - 环境变量未正确配置
-   - `.env` 文件格式错误（如有多余空格）
-   - 依赖包版本冲突
+2. Nguyên nhân thường gặp:
+   - Biến môi trường chưa cấu hình đúng
+   - File `.env` sai định dạng (có khoảng trắng thừa)
+   - Xung đột phiên bản dependency
 
 ---
 
-### Q14: Docker 中 API 服务无法访问？
+### Q14: Không truy cập được API service trong Docker?
 
-**解决方案**：
-1. 确保启动命令包含 `--host 0.0.0.0`（不能是 127.0.0.1）
-2. 检查端口映射是否正确：
+**Giải pháp**:
+1. Đảm bảo lệnh khởi động có `--host 0.0.0.0` (không được là 127.0.0.1)
+2. Kiểm tra port mapping có đúng không:
    ```yaml
    ports:
      - "8000:8000"
@@ -251,78 +251,78 @@ OPENAI_MODEL=deepseek-chat
 
 ---
 
-### Q14.1: Docker 中网络/DNS 解析失败（如 api.tushare.pro、searchapi.eastmoney.com 无法解析）？
+### Q14.1: Lỗi phân giải mạng/DNS trong Docker (như api.tushare.pro, searchapi.eastmoney.com không phân giải được)?
 
-**现象**：日志显示 `Temporary failure in name resolution` 或 `NameResolutionError`，股票数据 API 和大模型 API 均无法访问。
+**Hiện tượng**: Log hiển thị `Temporary failure in name resolution` hoặc `NameResolutionError`, cả API dữ liệu cổ phiếu và API mô hình lớn đều không truy cập được.
 
-**原因**：自定义 bridge 网络下，容器使用 Docker 内置 DNS，在旁路由、特定网络环境时可能解析失败。
+**Nguyên nhân**: Trong mạng bridge tùy chỉnh, container sử dụng DNS tích hợp của Docker, có thể phân giải thất bại trong môi trường router phụ hoặc mạng đặc thù.
 
-**解决方案**（按优先级尝试）：
+**Giải pháp** (thử theo thứ tự ưu tiên):
 
-1. **显式配置 DNS**：在 `docker/docker-compose.yml` 的 `x-common` 下添加：
+1. **Cấu hình DNS rõ ràng**: Thêm vào `x-common` trong `docker/docker-compose.yml`:
    ```yaml
    dns:
      - 223.5.5.5
      - 119.29.29.29
      - 8.8.8.8
    ```
-   然后执行 `docker-compose down` 和 `docker-compose up -d --force-recreate` 重新创建容器。
+   Sau đó chạy `docker-compose down` và `docker-compose up -d --force-recreate` để tạo lại container.
 
-2. **改用 host 网络模式**：若上述仍无效，可在 `server` 服务下添加 `network_mode: host`，并移除 `ports` 映射。使用 host 模式时，`ports` 无效，**端口由 `command` 中的 `--port` 指定**。若宿主机默认端口已占用，可修改为其他端口（如 `.env` 中设置 `API_PORT=8080`），访问对应 `http://localhost:8080`。
+2. **Chuyển sang chế độ mạng host**: Nếu vẫn không hiệu quả, thêm `network_mode: host` vào service `server`, và xóa mapping `ports`. Khi dùng chế độ host, `ports` không có hiệu lực, **port được chỉ định bởi `--port` trong `command`**. Nếu port mặc định trên host đã bị chiếm, có thể đổi sang port khác (như đặt `API_PORT=8080` trong `.env`), truy cập tại `http://localhost:8080`.
 
-> 📌 相关 Issue: [#372](https://github.com/ZhuLinsen/daily_stock_analysis/issues/372)
+> 📌 Issue liên quan: [#372](https://github.com/ZhuLinsen/daily_stock_analysis/issues/372)
 
 ---
 
-## 🔧 其他问题
+## 🔧 Vấn Đề Khác
 
-### Q15: 如何只运行大盘复盘，不分析个股？
+### Q15: Làm sao chỉ chạy review thị trường, không phân tích cổ phiếu riêng lẻ?
 
-**方法**：
+**Cách làm**:
 ```bash
-# 本地运行
+# Chạy cục bộ
 python main.py --market-only
 
 # GitHub Actions
-# 手动触发时选择 mode: market-only
+# Khi trigger thủ công chọn mode: market-only
 ```
 
 ---
 
-### Q16: 分析结果中买入/观望/卖出数量统计不对？
+### Q16: Số lượng thống kê Mua/Chờ/Bán trong kết quả phân tích không đúng?
 
-**原因**：早期版本使用正则匹配统计，可能与实际建议不一致。
+**Nguyên nhân**: Các phiên bản cũ dùng regex để thống kê, có thể không khớp với khuyến nghị thực tế.
 
-**解决方案**：已在最新版本中修复，AI 模型现在会直接输出 `decision_type` 字段用于准确统计。
+**Giải pháp**: Đã sửa trong phiên bản mới nhất, mô hình AI giờ trực tiếp xuất trường `decision_type` để thống kê chính xác.
 
 ---
 
-### Q17: 为什么周末在 GitHub Actions 手动触发仍显示“非交易日跳过”？
+### Q17: Tại sao cuối tuần trigger thủ công trên GitHub Actions vẫn báo "không phải ngày giao dịch, bỏ qua"?
 
-**现象**：已经配置了 `TRADING_DAY_CHECK_ENABLED` 或希望手动运行，但日志仍提示“今日所有相关市场均为非交易日，跳过执行”。
+**Hiện tượng**: Đã cấu hình `TRADING_DAY_CHECK_ENABLED` hoặc muốn chạy thủ công, nhưng log vẫn báo "今日所有相关市场均为非交易日，跳过执行" (hôm nay tất cả thị trường liên quan đều không phải ngày giao dịch, bỏ qua).
 
-**解决方案**：
-1. 打开 `Actions → 每日股票分析 → Run workflow`
-2. 手动触发时将 `force_run` 设为 `true`（单次强制运行）
-3. 如果希望长期关闭交易日检查，在 `Settings → Secrets and variables → Actions` 中设置：
+**Giải pháp**:
+1. Mở `Actions → 每日股票分析 → Run workflow`
+2. Khi trigger thủ công đặt `force_run` thành `true` (bắt buộc chạy 1 lần)
+3. Nếu muốn tắt kiểm tra ngày giao dịch lâu dài, vào `Settings → Secrets and variables → Actions` đặt:
    ```bash
    TRADING_DAY_CHECK_ENABLED=false
    ```
 
-**规则说明**：
-- `TRADING_DAY_CHECK_ENABLED=true` 且 `force_run=false`：非交易日跳过（默认）
-- `force_run=true`：本次即使非交易日也执行
-- `TRADING_DAY_CHECK_ENABLED=false`：定时和手动都不做交易日检查
+**Quy tắc**:
+- `TRADING_DAY_CHECK_ENABLED=true` và `force_run=false`: Bỏ qua nếu không phải ngày giao dịch (mặc định)
+- `force_run=true`: Lần này dù không phải ngày giao dịch cũng thực thi
+- `TRADING_DAY_CHECK_ENABLED=false`: Không kiểm tra ngày giao dịch cho cả定时 và thủ công
 
 ---
 
-## 💬 还有问题？
+## 💬 Còn Vấn Đề?
 
-如果以上内容没有解决你的问题，欢迎：
-1. 查看 [完整配置指南](full-guide.md)
-2. 搜索或提交 [GitHub Issue](https://github.com/ZhuLinsen/daily_stock_analysis/issues)
-3. 查看 [更新日志](CHANGELOG.md) 了解最新修复
+Nếu nội dung trên chưa giải quyết được vấn đề của bạn, vui lòng:
+1. Xem [Hướng Dẫn Cấu Hình Đầy Đủ](full-guide.md)
+2. Tìm kiếm hoặc gửi [GitHub Issue](https://github.com/ZhuLinsen/daily_stock_analysis/issues)
+3. Xem [Nhật Ký Thay Đổi](CHANGELOG.md) để biết các bản sửa lỗi mới nhất
 
 ---
 
-*最后更新：2026-02-28*
+*Cập nhật lần cuối: 2026-02-28*

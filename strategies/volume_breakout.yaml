@@ -1,4 +1,4 @@
-# Volume Breakout Strategy / 放量突破
+# Volume Breakout Strategy / tang khoi luongdot pha
 # Price breaks above resistance on heavy volume (>2x average).
 
 name: volume_breakout
@@ -10,41 +10,40 @@ required_tools:
   - get_daily_history
   - analyze_trend
   - get_realtime_quote
-aliases: [放量突破, 突破]
+aliases: [tang khoi luongdot pha, dot pha]
 default_priority: 30
 market_regimes: [trending_up]
 
 instructions: |
-  **放量突破（Volume Breakout Strategy）**
+  **Tang Luong Vuot Qua (Volume Breakout Strategy)**
 
-  突破判定标准：
+  Tieu chuan xac dinh vuot qua:
 
-  1. **阻力位识别**：
-     - 使用 `analyze_trend` → resistance_levels 获取阻力位。
-     - 通常为 20 日高点或前期震荡平台顶部。
+  1. **Nhan dien khang cu**:
+     - Su dung `analyze_trend` -> resistance_levels lay muc khang cu.
+     - Thuong la day cao 20 ngay hoac dinh dao dong truoc.
 
-  2. **量能确认**（关联理念3：效率优先）：
-     - 当日成交量 > 5 日均量的 2 倍。
-     - 使用 `get_realtime_quote` → volume_ratio > 2.0 确认。
-     - 使用 `get_daily_history` 计算均量进行交叉验证。
+  2. **Xac nhan nang luong**:
+     - Khoi luong ngay > 2 lan khoi luong trung binh 5 ngay.
+     - Su dung `get_realtime_quote` -> volume_ratio > 2.0 xac nhan.
+     - Su dung `get_daily_history` tinh khoi luong trung binh de xac thuc cheo.
 
-  3. **价格确认**（关联理念1：严进策略）：
-     - 收盘价必须站上阻力位。
-     - 收盘应在当日振幅上方 30%（强势收盘）。
-     - 突破后乖离率检查：仍需 < 5%，避免追高。
+  3. **Xac nhan gia**:
+     - Gia dong cua phai nam tren muc khang cu.
+     - Dong cua o phia tren phien 30% (dong cua manh).
+     - Kiem tra ty le lech sau vuot qua: van can < 5%, tranh duoi theo gia.
 
-  4. **后续验证**（如有数据）：
-     - 次日开盘应在突破位之上，区分真突破与假突破。
+  4. **Xac thuc sau** (neu co du lieu):
+     - Ngay sau mo cua o tren vi tri vuot qua, phan biet vuot qua that va gia.
 
-  5. **风险过滤**（关联理念5：风险排查）：
-     - 通过 `search_stock_news` 检查无重大利空。
-     - PE 不应过高（避免泡沫型突破）。
+  5. **Loc rui ro**:
+     - Qua `search_stock_news` kiem tra khong co tin tuc tieu cuc lon.
+     - PE khong nen qua cao (tranh vuot qua bong bong).
 
-  评分调整：
-  - 放量突破确认：sentiment_score +12
-  - 突破伴随板块共振（板块也走强）：额外 +5
-  - 理想买点设在突破位附近，止损设在突破位下方 3%。
-  - 在 `buy_reason` 和 `volume_analysis` 中注明"放量突破"。
+  ## Dieu chinh diem:
+  - Tang luong vuot qua xac nhan: sentiment_score +12
+  - Vuot qua di kem cong huyen nganh (nganh cung manh): cong them +5
+  - Diem mua ly tuong o gan vi tri vuot qua, dung sai o duoi vi tri vuot qua 3%.
 
 # Vietnam market parameters (HOSE/HNX)
 vn_market:

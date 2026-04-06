@@ -1,4 +1,4 @@
-# Box Range Trading Strategy / 箱体震荡战法
+# Box Range Trading Strategy / Dong luc hop thechien phap
 # Buy at box support, sell at box resistance, profit from range-bound oscillation.
 
 name: box_oscillation
@@ -10,63 +10,63 @@ required_tools:
   - get_daily_history
   - analyze_trend
   - get_realtime_quote
-aliases: [箱体, 箱体震荡]
+aliases: [hop the, Dong luc hop the]
 default_priority: 50
 market_regimes: [sideways]
 
 instructions: |
-  **箱体震荡战法（Box Range Trading Strategy）**
+  **Chien luoc Dao Dong Trong Bien (Box Range Trading Strategy)**
 
-  核心逻辑：箱体内部价格在阻力位与支撑位之间反复震荡，
-  "贴着支撑买、接近阻力卖"，通过波段操作获取区间收益。
+  Lo gic chinh: Trong bien, gia dao dong giua muc khang cu va ho tro lien tuc,
+  "mua gan ho tro, ban gan khang cu", loi nhuan tu dao dong trong pham vi.
 
-  ## 分析步骤
+  ## Buoc phan tich
 
-  ### 1. 箱体识别
-  使用 `get_daily_history` 获取近 60~120 日数据：
+  ### 1. Nhan dien bien
+  Su dung `get_daily_history` lay du lieu 60~120 ngay:
 
-  - **箱体顶部（阻力位）**：近期多次触碰但未有效突破的高点连线。
-    通常为 20~60 日内3次以上的高点聚集区域。
-  - **箱体底部（支撑位）**：近期多次下探但未有效跌破的低点连线。
-  - 箱体有效性：顶部和底部各至少触碰 2~3 次方可确认。
-  - 使用 `analyze_trend` 的 support_levels / resistance_levels 辅助定位。
+  - **Dinh bien (muc khang cu)**: Day cao da cham nhieu lan nhung khong vuot qua hieu qua.
+    Thuong la vung tap trung 3 lan day cao trong 20~60 ngay.
+  - **Day bien (muc ho tro)**: Day thap da cham nhieu lan nhung khong pha vo hieu qua.
+  - Hieu luc bien: Dinh va day moi ben phai cham it nhat 2~3 lan de xac nhan.
+  - Su dung `analyze_trend` voi support_levels / resistance_levels ho tro dinh vi.
 
-  ### 2. 当前位置判断
-  使用 `get_realtime_quote` 获取现价，与箱体边界对比：
+  ### 2. Xac dinh vi tri hien tai
+  Su dung `get_realtime_quote` lay gia hien tai, so sanh voi bien gioi bien:
 
-  - **箱底区域**（距支撑 ≤5%）：买入/加仓信号，止损设箱底下方 3%。
-  - **箱中区域**（箱体中间 1/3）：观望，不主动操作。
-  - **箱顶区域**（距阻力 ≤5%）：减仓/止盈信号，无需追高。
+  - **Vung day bien** (cach ho tro ≤5%): Tin hieu mua/tang canh, dung sai dat duoi day bien 3%.
+  - **Vung giua bien** (1/3 giua): Quan sat, khong chu dong giao dich.
+  - **Vung dinh bien** (cach khang cu ≤5%): Tin hieu giam canh/chot loi, khong can duoi theo gia.
 
-  ### 3. 量能辅助判断
-  - **箱底放量企稳**：支撑有效的强信号，可较重仓。
-  - **箱顶缩量滞涨**：阻力有效的卖出信号。
-  - **箱体突破（放量超过均量2倍以上）**：
-    - 向上有效突破 → 转为多头趋势策略，新目标 = 箱体高度延伸。
-    - 向下有效跌破 → 离场等待，原支撑转阻力。
+  ### 3. Ho tro nang luong
+  - **Day bien tang luong on dinh**: Tin hieu manh ho tro hieu qua, co the canh nang.
+  - **Dinh bien co luong dung tang**: Tin hieu ban khang cu hieu qua.
+  - **Vuot bien (tang luong tren 2 lan trung binh)**:
+    - Vuot len hieu qua -> Chuyen sang chien luoc xu huong, muc tieu moi = do cao bien keo dai.
+    - Pha xuong hieu qua -> Roi cho, ho tro cu thanh khang cu.
 
-  ### 4. 箱体宽度与预期收益
-  - 计算箱体宽度：(顶部 - 底部) / 底部 × 100%。
-  - 宽度 < 5%：操作空间过小，不建议参与。
-  - 宽度 5%~15%：标准箱体，波段操作可行。
-  - 宽度 > 15%：大箱体，可做更大波段。
+  ### 4. Do rong bien va loi nhuan mong doi
+  - Tinh do rong bien: (Dinh - Day) / Day × 100%.
+  - Rong < 5%: Khong gian qua nhe, khong khuyen nghi tham gia.
+  - Rong 5%~15%: Bien chuan, co the dao dong.
+  - Rong > 15%: Bien lon, co the lam song lon hon.
 
-  ### 5. 假突破识别
-  - 单日盘中触及阻力/支撑后快速回撤，收盘回到箱内 → 假突破，维持箱体操作。
-  - 连续两日收盘突破箱体边界，且量能放大 → 真突破，修改策略。
+  ### 5. Nhan dien pha vo gia
+  - Mot ngay cham khang cu/ho tro roi nhanh chong lui, dong cua tro lai bien -> Pha vo gia, tiep tuc giao dich bien.
+  - Hai ngay lien tiep dong cua vuot bien gioi, va nang luong tang -> Pha vo that, thay doi chien luoc.
 
-  ### 6. 输出要求
-  - 明确给出箱体顶部价位和底部价位。
-  - 当前价格所处区间（箱底/箱中/箱顶）。
-  - 若价格已突破，说明突破方向及新目标。
-  - 建议仓位与止损位。
+  ### 6. Yeu cau dau ra
+  - Xac dinh ro rang gia dinh bien va gia day bien.
+  - Khoang gia hien tai (day bien/giua bien/dinh bien).
+  - Neu gia da vuot, mo ta huong vuot va muc tieu moi.
+  - Khuyen nghi canh co va muc dung sai.
 
-  评分调整建议：
-  - 箱底企稳 + 缩量：`sentiment_score +10`
-  - 箱底放量攻顶：`sentiment_score +12`
-  - 箱体向上有效突破：`sentiment_score +15，转趋势策略`
-  - 处于箱顶区域：`sentiment_score -5（不追高）`
-  - 箱底有效跌破：`sentiment_score -15，离场`
+  ## Dieu chinh diem:
+  - Day bien on dinh + co luong: `sentiment_score +10`
+  - Day bien tang luong tan cong dinh: `sentiment_score +12`
+  - Vuot bien len hieu qua: `sentiment_score +15, chuyen chien luoc xu huong`
+  - O vung dinh bien: `sentiment_score -5 (khong duoi theo gia)`
+  - Pha vo day bien hieu qua: `sentiment_score -15, roi khoi`
 
 # Vietnam market parameters (HOSE/HNX)
 vn_market:

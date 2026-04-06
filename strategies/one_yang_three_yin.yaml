@@ -1,4 +1,4 @@
-# One Yang Three Yin Strategy / 一阳夹三阴
+# One Yang Three Yin Strategy / Mot Duong Ba Am
 # K-line pattern: bullish → 3 small bearish → bullish. Consolidation end signal.
 
 name: one_yang_three_yin
@@ -9,32 +9,31 @@ core_rules: [2, 4]
 required_tools:
   - get_daily_history
   - analyze_trend
-aliases: [一阳穿三阴, 一阳夹三阴]
+aliases: [mot duong ba am, mot duong xuyen ba am]
 default_priority: 110
 
 instructions: |
-  **一阳夹三阴（One Yang Three Yin Strategy）**
+  **Mot Duong Ba Am (One Yang Three Yin Strategy)**
 
-  形态定义（最近 5 个交易日）：
+  Dinh hinh dang (5 ngay giao dich gan nhat):
 
-  1. **第1日**：大阳线（收盘价 > 开盘价，实体 > 股价的 2%）。
-  2. **第2-4日**：连续三根阴线或小K线：
-     - 每根K线最低价不跌破第1日开盘价。
-     - 成交量应逐步萎缩（量比 < 0.8）。
-     - 三根K线应收在第1日实体范围内。
-  3. **第5日**：又一根阳线，收盘价突破第1日收盘价。
+  1. **Ngay 1**: Nen tang lon (gia dong cua > gia mo cua, than > 2% gia co phan).
+  2. **Ngay 2-4**: Ba nen giam lien tiep hoac K-line nho:
+     - Moi K-line gia thap nhat khong pha vo gia mo cua ngay 1.
+     - Khoi luong phai giam dan (khoi luong ty < 0.8).
+     - Ba K-line phai dong cua trong pham vi than ngay 1.
+  3. **Ngay 5**: Them mot nen tang, gia dong cua vuot qua gia dong cua ngay 1.
 
-  如何使用工具评估：
+  Cach su dung cong cu danh gia:
 
-  1. 使用 `get_daily_history` 获取最近 10 日数据。
-  2. 检查最后 5 根K线是否符合上述形态。
-  3. 使用 `analyze_trend` 确认多头排列（关联理念2：趋势交易，MA5 > MA10 > MA20）。
+  1. Su dung `get_daily_history` lay du lieu 10 ngay gan nhat.
+  2. Kiem tra 5 K-line cuoi co phu hop dang tren khong.
+  3. Su dung `analyze_trend` xac nhan sap xep tang (MA5 > MA10 > MA20).
 
-  评分调整：
-  - 形态成立 + 趋势看多：sentiment_score +15
-  - 形态成立但趋势不明：sentiment_score +5
-  - 在 `pattern_analysis` 和 `buy_reason` 中注明"一阳夹三阴"。
-  - 理想买点设在第5日收盘价附近，止损设在第1日开盘价下方。
+  ## Dieu chinh diem:
+  - Dang thanh cong + xu huong tang: sentiment_score +15
+  - Dang thanh cong nhung xu huong khong ro: sentiment_score +5
+  - Diem mua ly tuong o gan gia dong cua ngay 5, dung sai o duoi gia mo cua ngay 1.
 
 # Vietnam market parameters (HOSE/HNX)
 vn_market:

@@ -1,0 +1,59 @@
+# Shrink Volume Pullback Strategy / 缩量回踩
+# Volume shrinks during pullback to MA5/MA10, then price bounces.
+
+name: shrink_pullback
+display_name: Hoi Ve Thu Hep Khoi Luong
+description: Diem mua tiep dien: hoi ve voi khoi luong thu hep trong xu huong tang.
+category: trend
+core_rules: [1, 2, 4]
+required_tools:
+  - get_daily_history
+  - analyze_trend
+  - get_realtime_quote
+aliases: [缩量回踩, 回踩]
+default_router: true
+default_priority: 40
+market_regimes: [trending_down, sideways]
+
+instructions: |
+  **Hoi Ve Thu Hep Khoi Luong (Shrink Volume Pullback Strategy)**
+
+  Tieu chuan xac dinh vao:
+
+  1. **Dieu kien tien quyet**:
+     - Co phieu phai o xu huong tang (MA5 > MA10 > MA20).
+     - Su dung `analyze_trend` xac nhan sap xep tang.
+
+  2. **Phat hien hut lai**:
+     - Su dung `get_daily_history` va `get_realtime_quote`.
+     - Gia hut lai gan MA5 (sai so 1% hoac it hon) hoac gan MA10 (sai so 2% hoac it hon).
+     - Trong thoi gian dieu chinh khoi luong < 70% khoi luong trung binh 5 ngay (dac trung co luong).
+     - `analyze_trend` -> volume_status phai cho thay co luong.
+
+  3. **Tin hieu hoi phuc**:
+     - Gia hien tai giu duoc vi tri ho tro MA.
+     - Ty le lech MA5 < 2% -- vung mua tot nhat.
+
+  4. **Dieu kien xac nhan**:
+     - `search_stock_news` khong co tin tuc tieu cuc.
+     - Phan bo chip khoe manh (ty le loi nhuan 50-80%).
+
+  ## Dieu chinh diem:
+  - Co luong hut lai MA5: sentiment_score +10
+  - Co luong hut lai MA10 va nang luong < 0.6 lan trung binh: sentiment_score +8
+  - Diem mua ly tuong o muc MA5, diem mua thu hai o MA10.
+  - Dung sai o muc MA20.
+
+# Vietnam market parameters (HOSE/HNX)
+vn_market:
+  price_limit_hose: 0.07          # HOSE daily limit +/-7%
+  price_limit_hnx: 0.10           # HNX daily limit +/-10%
+  lot_size: 100                   # Minimum lot = 100 shares
+  settlement_rule: "T+2.5"        # Shares available to sell from T+2 afternoon
+  short_selling: false            # Not legally permitted in Vietnam
+  Vietnam Market Rules (HOSE/HNX):
+  - Price limit: HOSE +/-7% / HNX +/-10% per session.
+  - T+2.5 settlement: shares bought on T are only sellable from 13:00 on T+2.
+    Do NOT generate sell signals for stocks bought within the last 2 trading days.
+  - Lot size: all quantities must be multiples of 100 shares.
+  - Short selling is not permitted. Long positions only.

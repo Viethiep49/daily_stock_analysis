@@ -1,4 +1,4 @@
-# Sentiment Cycle Strategy / 情绪周期
+# Sentiment Cycle Strategy / Chu ky cam xuc
 # Uses market sentiment, turnover rate and volume pattern to time entries against crowd behavior.
 
 name: emotion_cycle
@@ -11,72 +11,73 @@ required_tools:
   - get_realtime_quote
   - analyze_trend
   - search_stock_news
-aliases: [情绪, 情绪周期]
+aliases: [cam xuc, Chu ky cam xuc]
 default_priority: 100
 market_regimes: [sector_hot]
 
 instructions: |
-  **情绪周期策略（Sentiment Cycle Strategy）**
+  **Chien luoc Chu ky Cam Xuc Thi Truong (Sentiment Cycle Strategy)**
 
-  核心哲学：市场参与者的情绪在"恐慌→悲观→怀疑→希望→乐观→兴奋→贪婪→狂热"
-  之间循环。聪明钱在恐慌底部布局，在狂热顶部离场。
+  Triet ly cua chien luoc: Cam xuc cua nguoi tham gia thi truong dao dong theo vong
+  "hoang so -> bi quan -> nghi ngo -> hy vong -> lac quan -> hung phan -> tham lam -> cuong nhiet".
+  Nha dau tu thong minh xep hang o day hoang so va thoai khoi o dinh cuong nhiet.
 
-  ## 情绪阶段量化指标
+  ## Chi so luong hoa cac giai doan cam xuc
 
-  ### 第一步：换手率分析（情绪热度核心指标）
-  使用 `get_daily_history` 和 `get_realtime_quote`：
+  ### Buoc 1: Phan tich ty le dao dong (chi so nhiet cam xuc chinh)
+  Su dung `get_daily_history` va `get_realtime_quote`:
 
-  - **换手率 < 0.5%/日**：市场冷淡，无人关注，潜在底部区域（贪婪时买入别人的恐慌）。
-  - **换手率 0.5%~2%**：正常交投，情绪平稳。
-  - **换手率 2%~5%**：活跃，市场开始关注，不宜追高。
-  - **换手率 > 5%**：高热度，游资/散户涌入，警惕情绪顶。
-  - **换手率 > 10%（日均）**：极度过热，通常为短期顶部。
+  - **Ty le dao dong < 0.5%/ngay**: Thi truong lanh le, khong ai chu y, vung day tiem an (mua khi nguoi khac hoang so).
+  - **Ty le dao dong 0.5%~2%**: Giao dich binh thuong, cam xuc on dinh.
+  - **Ty le dao dong 2%~5%**: Hoat dong, thi truong bat dau chu y, khong nen duoi theo gia.
+  - **Ty le dao dong > 5%**: Nhiet do cao, von tam / nha dau tu le a o, canh giac dinh cam xuc.
+  - **Ty le dao dong > 10% (trung binh ngay)**: Qua nhiet qua muc, thuong la dinh ngan han.
 
-  ### 第二步：连续换手率走势
-  使用 `get_daily_history` 计算近 20 日换手率走势：
-  - 由高向低（持续降温）+ 成交量萎缩 → 情绪退潮，耐心等待。
-  - 由低向高（加速升温）+ 成交量陡增 → 情绪启动，可介入。
-  - 突然单日暴量（换手率超过前期5倍）→ 往往是主力出货，需警惕。
+  ### Buoc 2: Xu huong lien tuc cua ty le dao dong
+  Su dung `get_daily_history` tinh toan xu huong ty le dao dong 20 ngay gan nhat:
+  - Tu cao xuong thap (giam dan) + khoi luong co lai -> Cam xuc roi dan, kien nhan cho.
+  - Tu thap len cao (tang toc) + khoi luong tang dot bien -> Cam xuc bat dau, co the tham gia.
+  - Dot bien khoi luong mot ngay (ty le dao dong vuot 5 lan muc truoc) -> Thuong la thoai hang chu luc, can canh giac.
 
-  ### 第三步：新闻情绪面分析
-  使用 `search_stock_news` 搜索近期新闻，分析情绪倾向：
-  - 新闻集中出现"利好兑现、业绩超预期、涨停板、机构推荐"等 → 情绪可能过热。
-  - 新闻集中出现"业绩下滑、利空、跌破支撑" → 悲观情绪可能造就底部。
-  - 散户论坛/社交媒体情绪极端负面 → 反向指标，可能接近底部。
+  ### Buoc 3: Phan tich cam xuc tu tin tuc
+  Su dung `search_stock_news` tim kiem tin tuc gan day, phan tich huong cam xuc:
+  - Tin tuc tap trung "loi ich thuc hien, ket qua kinh doanh vuot mong doi, tran giam khoa, co cau khuyen nghi" -> Cam xuc co the qua nhiet.
+  - Tin tuc tap trung "ket qua kinh doanh giam, bat loi, pha vo ho tro" -> Cam xuc bi quan co the tao nen day.
+  - Dien dan nha dau tu le / mang xa hoi cam xuc cuc tieu cuc -> Chi bao nguoc, co the gan day.
 
-  ### 第四步：均线收缩与波动率
-  使用 `analyze_trend`：
-  - MA5/MA10/MA20 三线粘合（均线收缩）→ 蓄势，方向待定，情绪冷淡。
-  - 波动率降至低位（ATR 萎缩）→ 情绪极度低迷，蓄势爆发前兆。
+  ### Buoc 4: MA thut hep va do dong bien
+  Su dung `analyze_trend`:
+  - MA5/MA10/MA20 ba duong hoi tu (MA thut hep) -> Chuan bi, huong cho xac dinh, cam xuc lanh le.
+  - Do dong bien giam xuong muc thap (ATR co lai) -> Cam xuc cuc ky thap, chieu truoc bung no.
 
-  ## 情绪底部特征（买入区）
-  满足以下3项以上：
-  ✅ 近20日換手率处于近一年低位
-  ✅ 成交量持续萎缩，低于近60日均量50%以上
-  ✅ 近期新闻以低调、中性或负面为主
-  ✅ 股价在MA20附近或以下，但未出现恐慌性暴跌
-  ✅ 机构持仓稳定或小幅增加（如有数据）
+  ## Dac trung day cam xuc (vung mua)
+  Dat it nhat 3 dieu sau:
+  ✅ Ty le dao dong 20 ngay gan nhat o muc thap nhat trong 1 nam
+  ✅ Khoi luong giam dan lien tuc, thap hon 50% khoi luong trung binh 60 ngay
+  ✅ Tin tuc gan day phan lon la trung tinh, am thap hoac tieu cuc
+  ✅ Gia co phan o gan hoac duoi MA20, nhung khong xay ra giam manh hoang so
+  ✅ So huu co cau on dinh hoac tang nhe (neu co du lieu)
 
-  ## 情绪顶部特征（减仓区）
-  满足以下3项以上：
-  ⚠️ 近5日换手率 > 近20日均值的2倍
-  ⚠️ 成交量脉冲式放大（单日）
-  ⚠️ 新闻以利好兑现、机构目标价大幅上调、散户追捧为主
-  ⚠️ 股价偏离MA5超过8%（高乖离率）
-  ⚠️ MACD 出现顶背离
+  ## Dac trung dinh cam xuc (vung giam canh co)
+  Dat it nhat 3 dieu sau:
+  ⚠️ Ty le dao dong 5 ngay > 2 lan muc trung binh 20 ngay
+  ⚠️ Khoi luong phong to xung dot bien (mot ngay)
+  ⚠️ Tin tuc chu yeu la loi ich thuc hien, muc tieu gia co cau tang manh, nha dau tu le duoi theo
+  ⚠️ Gia co phan lech MA5 tren 8% (ty le lech cao)
+  ⚠️ MACD xuat hien phan ky dinh
 
-  ## 输出要求
-  - 当前情绪阶段判断：冷淡底部 / 平稳 / 升温介入 / 过热警惕 / 狂热顶部。
-  - 当前换手率与近一年换手率均值对比。
-  - 是否满足情绪底部或顶部特征（列出满足条项）。
-  - 给出逆情绪操作建议（大众恐慌我贪婪，大众贪婪我谨慎）。
+  ## Yeu cau dau ra
+  - Xac dinh giai doan cam xuc hien tai: Day lanh le / On dinh / Khoi dong tham gia / Qua nhiet canh giac / Cuong nhiet dinh.
+  - So sanh ty le dao dong hien tai voi muc trung binh 1 nam.
+  - Co dat duoc dac trung day hoac dinh cam xuc khong (liet ke cac dieu dat).
+  - Dua ra khuyen cao hanh dong nguoc cam xuc (dai da so hoang so thi tham lam, dai da so tham lam thi can than).
 
-  评分调整建议：
-  - 情绪底部特征满足3项以上：`sentiment_score +14`
-  - 情绪底部特征满足全部5项：`sentiment_score +20`
-  - 情绪顶部特征满足3项以上：`sentiment_score -12`
-  - 情绪顶部特征满足全部5项：`sentiment_score -20`
-  - 情绪平稳区间：不调整基础分
+  ## Dieu chinh diem:
+  - Dat du 3 dieu day cam xuc: `sentiment_score +14`
+  - Dat du toan bo 5 dieu day cam xuc: `sentiment_score +20`
+  - Dat du 3 dieu dinh cam xuc: `sentiment_score -12`
+  - Dat du toan bo 5 dieu dinh cam xuc: `sentiment_score -20`
+  - Khoang cam xuc on dinh: khong dieu chinh diem co so
 
 # Vietnam market parameters (HOSE/HNX)
 vn_market:

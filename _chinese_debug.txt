@@ -1,0 +1,7 @@
+strategies\bottom_volume.yaml
+strategies\box_oscillation.yaml
+strategies\chan_theory.yaml
+strategies\dragon_head.yaml
+strategies\shrink_pullback.yaml
+strategies\volume_breakout.yaml
+strategies\wave_theory.yaml

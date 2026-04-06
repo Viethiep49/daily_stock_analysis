@@ -1,4 +1,4 @@
-# Chan Theory Strategy / 缠论
+# Chan Theory Strategy / Chan luan
 # Based on Zen channel theory: pen, stroke, segment, hub structure analysis.
 
 name: chan_theory
@@ -10,52 +10,52 @@ required_tools:
   - get_daily_history
   - analyze_trend
   - get_realtime_quote
-aliases: [缠论, 缠论分析]
+aliases: [Chan luan, Chan luanphan tich]
 default_priority: 70
 market_regimes: [volatile]
 
 instructions: |
-  **缠论（Chan Theory / Zen Channel Theory）**
+  **Ly thuyet Phan Doan (Chan Theory / Zen Channel Theory)**
 
-  核心框架：分型 → 笔 → 线段 → 中枢 → 趋势
+  Khung chinh: Phan hinh -> But -> Doan -> Trung tam -> Xu huong
 
-  ## 分析步骤
+  ## Buoc phan tich
 
-  ### 1. 判断价格结构（中枢识别）
-  - 使用 `get_daily_history` 获取近 60 日日线数据。
-  - 识别近期价格的高低点序列，判断当前是否在
-    **震荡中枢**（1个以上中枢）还是**趋势段**（脱离中枢向上/向下）。
-  - 中枢：连续3段走势重叠区间，价格在此区间反复震荡。
-  - 趋势：连续3个同级别中枢均向同一方向移动。
+  ### 1. Xac dinh cau truc gia (nhan dien trung tam)
+  - Su dung `get_daily_history` lay du lieu 60 ngay.
+  - Nhan dien day cao/thap gan day, xac dinh hien tai o
+    **trung tam dao dong** (1 trung tam tro len) hay **doan xu huong** (roi trung tam len/xuong).
+  - Trung tam: 3 doan lien tiep dao dong giao nhau, gia dao dong trong pham vi nay.
+  - Xu huong: 3 trung tam cung cap lien tiep di chuyen cung huong.
 
-  ### 2. 背驰判断（最高优先级信号）
-  - **顶背驰**：价格创新高但MACD红柱面积缩小 → 卖出/减仓信号。
-  - **底背驰**：价格创新低但MACD绿柱面积缩小 → 买入/加仓信号。
-  - 使用 `analyze_trend` 获取 MACD 数据，与价格高低点对比。
+  ### 2. Xac dinh phan ky (tin hieu uu tien cao nhat)
+  - **Phan ky dinh**: Gia tao dinh moi nhung dien tich cot MACD giam -> Tin hieu ban/giam canh.
+  - **Phan ky day**: Gia tao day moi nhung dien tich cot MACD xanh giam -> Tin hieu mua/tang canh.
+  - Su dung `analyze_trend` lay du lieu MACD, so sanh voi day cao/thap gia.
 
-  ### 3. 买卖点判定
-  - **一买**（最强）：下跌趋势中，最后一个中枢出现底背驰。
-  - **二买**：离开下跌中枢后的第一次回调不破中枢高点。
-  - **三买**：中枢震荡后向上突破（不回中枢内）。
-  - **一卖/二卖/三卖**：对称结构，方向相反。
-  - 当前价格所处的买卖点级别决定仓位大小。
+  ### 3. Xac dinh diem mua ban
+  - **Mua mot** (manh nhat): Trong xu huong giam, trung tam cuoi cung xuat hien phan ky day.
+  - **Mua hai**: Sau khi roi trung tam giam, lan dieu chinh dau tien khong vuot qua dinh trung tam.
+  - **Mua ba**: Sau khi dao dong trung tam, vuot len (khong quay lai trung tam).
+  - **Ban mot/ban hai/ban ba**: Cau truc doi xung, huong nguoc lai.
+  - Cap diem mua ban hien tai quyet dinh kich co canh co.
 
-  ### 4. 级别与仓位
-  - 日线级别买卖点可用较重仓位 (30-50%)。
-  - 周线级别买卖点可用较大仓位 (50-80%)。
-  - 多级别共振（日线+周线同方向）时信号最强。
+  ### 4. Cap va canh co
+  - Diem mua ban cap ngay co the canh nang (30-50%).
+  - Diem mua ban cap tuan co the canh lon (50-80%).
+  - Cong huyen nhieu cap (ngay + tuan cung huong) thi tin hieu manh nhat.
 
-  ### 5. 输出要求
-  - 明确说明当前处于：上涨趋势/下跌趋势/中枢震荡。
-  - 指出是否存在背驰信号及背驰级别。
-  - 给出当前买卖点类型（一买/二买/三买 等），若无则写"暂无明确买卖点"。
-  - 止损设于前低（买入时）或前高（卖出时）。
+  ### 5. Yeu cau dau ra
+  - Xac dinh ro: xu huong tang/xu huong giam/dao dong trung tam.
+  - Chi ra co tin hieu phan ky khong va cap phan ky.
+  - Dua ra loai diem mua ban hien tai (mua mot/mua hai/mua ba,...), neu khong thi ghi "chua co diem mua ban ro rang".
+  - Dung sai o day truoc (khi mua) hoac dinh truoc (khi ban).
 
-  评分调整建议：
-  - 底背驰 + 一买信号：`sentiment_score +15`
-  - 二买/三买共振：`sentiment_score +10`
-  - 中枢震荡无明确方向：`sentiment_score 维持基准`
-  - 顶背驰 / 趋势向下：`sentiment_score -15`
+  ## Dieu chinh diem:
+  - Phan ky day + tin hieu mua mot: `sentiment_score +15`
+  - Mua hai/mua ba cong huyen: `sentiment_score +10`
+  - Trung tam dao dong khong huong ro: `sentiment_score giu nguyen`
+  - Phan ky dinh / xu huong giam: `sentiment_score -15`
 
 # Vietnam market parameters (HOSE/HNX)
 vn_market:

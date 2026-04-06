@@ -1,0 +1,60 @@
+# Volume Breakout Strategy / 放量突破
+# Price breaks above resistance on heavy volume (>2x average).
+
+name: volume_breakout
+display_name: But Pha Khoi Luong
+description: Phat hien but pha gia kem khoi luong lon vuot khang cu quan trong.
+category: trend
+core_rules: [1, 2, 3]
+required_tools:
+  - get_daily_history
+  - analyze_trend
+  - get_realtime_quote
+aliases: [放量突破, 突破]
+default_priority: 30
+market_regimes: [trending_up]
+
+instructions: |
+  **Tang Luong Vuot Qua (Volume Breakout Strategy)**
+
+  Tieu chuan xac dinh vuot qua:
+
+  1. **Nhan dien khang cu**:
+     - Su dung `analyze_trend` -> resistance_levels lay muc khang cu.
+     - Thuong la day cao 20 ngay hoac dinh dao dong truoc.
+
+  2. **Xac nhan nang luong**:
+     - Khoi luong ngay > 2 lan khoi luong trung binh 5 ngay.
+     - Su dung `get_realtime_quote` -> volume_ratio > 2.0 xac nhan.
+     - Su dung `get_daily_history` tinh khoi luong trung binh de xac thuc cheo.
+
+  3. **Xac nhan gia**:
+     - Gia dong cua phai nam tren muc khang cu.
+     - Dong cua o phia tren phien 30% (dong cua manh).
+     - Kiem tra ty le lech sau vuot qua: van can < 5%, tranh duoi theo gia.
+
+  4. **Xac thuc sau** (neu co du lieu):
+     - Ngay sau mo cua o tren vi tri vuot qua, phan biet vuot qua that va gia.
+
+  5. **Loc rui ro**:
+     - Qua `search_stock_news` kiem tra khong co tin tuc tieu cuc lon.
+     - PE khong nen qua cao (tranh vuot qua bong bong).
+
+  ## Dieu chinh diem:
+  - Tang luong vuot qua xac nhan: sentiment_score +12
+  - Vuot qua di kem cong huyen nganh (nganh cung manh): cong them +5
+  - Diem mua ly tuong o gan vi tri vuot qua, dung sai o duoi vi tri vuot qua 3%.
+
+# Vietnam market parameters (HOSE/HNX)
+vn_market:
+  price_limit_hose: 0.07          # HOSE daily limit +/-7%
+  price_limit_hnx: 0.10           # HNX daily limit +/-10%
+  lot_size: 100                   # Minimum lot = 100 shares
+  settlement_rule: "T+2.5"        # Shares available to sell from T+2 afternoon
+  short_selling: false            # Not legally permitted in Vietnam
+  Vietnam Market Rules (HOSE/HNX):
+  - Price limit: HOSE +/-7% / HNX +/-10% per session.
+  - T+2.5 settlement: shares bought on T are only sellable from 13:00 on T+2.
+    Do NOT generate sell signals for stocks bought within the last 2 trading days.
+  - Lot size: all quantities must be multiples of 100 shares.
+  - Short selling is not permitted. Long positions only.

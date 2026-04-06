@@ -1,18 +1,19 @@
 # -*- coding: utf-8 -*-
 """
 ===================================
-A股自选股智能分析系统 - AI分析层
+Stock Analysis System - AI Analysis Layer
 ===================================
 
-职责：
-1. 封装 LLM 调用逻辑（通过 LiteLLM 统一调用 Gemini/Anthropic/OpenAI 等）
-2. 结合技术面和消息面生成分析报告
-3. 解析 LLM 响应为结构化 AnalysisResult
+Responsibilities:
+1. Encapsulate LLM calls (via LiteLLM unified calling Gemini/Anthropic/OpenAI etc.)
+2. Generate analysis reports combining technical and news aspects
+3. Parse LLM responses into structured AnalysisResult
 """
 
 import json
 import logging
 import math
+import random
 import time
 from dataclasses import dataclass
 from typing import Optional, Dict, Any, List, Tuple
@@ -989,6 +990,23 @@ class GeminiAnalyzer:
         """Check if LiteLLM is properly configured with at least one API key."""
         return self._router is not None or self._litellm_available
 
+    def _is_rate_limit_error(self, e: Exception) -> bool:
+        """Check if exception is a rate limit / throttling error."""
+        error_str = str(e).lower()
+        rate_limit_indicators = [
+            "rate limit",
+            "rate_limit",
+            "ratelimit",
+            "too many requests",
+            "429",
+            "throttl",
+            "request rate increased too quickly",
+            "scale requests more smoothly",
+            "quota exceeded",
+            "resource_exhausted",
+        ]
+        return any(indicator in error_str for indicator in rate_limit_indicators)
+
     def _call_litellm(
         self,
         prompt: str,
@@ -1027,53 +1045,64 @@ class GeminiAnalyzer:
         last_error = None
         effective_system_prompt = system_prompt or self.TEXT_SYSTEM_PROMPT
         for model in models_to_try:
-            try:
-                model_short = model.split("/")[-1] if "/" in model else model
-                call_kwargs: Dict[str, Any] = {
-                    "model": model,
-                    "messages": [
-                        {"role": "system", "content": effective_system_prompt},
-                        {"role": "user", "content": prompt},
-                    ],
-                    "temperature": temperature,
-                    "max_tokens": max_tokens,
-                }
-                extra = get_thinking_extra_body(model_short)
-                if extra:
-                    call_kwargs["extra_body"] = extra
+            # Per-model retry with exponential backoff for rate limit errors
+            max_retries = max(config.gemini_max_retries, 3)
+            base_delay = max(config.gemini_retry_delay, 3.0)
+            for attempt in range(max_retries):
+                try:
+                    model_short = model.split("/")[-1] if "/" in model else model
+                    call_kwargs: Dict[str, Any] = {
+                        "model": model,
+                        "messages": [
+                            {"role": "system", "content": effective_system_prompt},
+                            {"role": "user", "content": prompt},
+                        ],
+                        "temperature": temperature,
+                        "max_tokens": max_tokens,
+                    }
+                    extra = get_thinking_extra_body(model_short)
+                    if extra:
+                        call_kwargs["extra_body"] = extra
 
-                _router_model_names = set(get_configured_llm_models(config.llm_model_list))
-                if use_channel_router and self._router and model in _router_model_names:
-                    # Channel / YAML path: Router manages key + base_url per model
-                    response = self._router.completion(**call_kwargs)
-                elif self._router and model == config.litellm_model and not use_channel_router:
-                    # Legacy path: Router only for primary model multi-key
-                    response = self._router.completion(**call_kwargs)
-                else:
-                    # Legacy/direct-env path: direct call (also handles direct-env
-                    # providers like groq/ or bedrock/ that are not in the Router
-                    # model_list even when channel mode is active)
-                    keys = get_api_keys_for_model(model, config)
-                    if keys:
-                        call_kwargs["api_key"] = keys[0]
-                    call_kwargs.update(extra_litellm_params(model, config))
-                    response = litellm.completion(**call_kwargs)
+                    _router_model_names = set(get_configured_llm_models(config.llm_model_list))
+                    if use_channel_router and self._router and model in _router_model_names:
+                        response = self._router.completion(**call_kwargs)
+                    elif self._router and model == config.litellm_model and not use_channel_router:
+                        response = self._router.completion(**call_kwargs)
+                    else:
+                        keys = get_api_keys_for_model(model, config)
+                        if keys:
+                            call_kwargs["api_key"] = keys[0]
+                        call_kwargs.update(extra_litellm_params(model, config))
+                        response = litellm.completion(**call_kwargs)
 
-                if response and response.choices and response.choices[0].message.content:
-                    usage: Dict[str, Any] = {}
-                    if response.usage:
-                        usage = {
-                            "prompt_tokens": response.usage.prompt_tokens or 0,
-                            "completion_tokens": response.usage.completion_tokens or 0,
-                            "total_tokens": response.usage.total_tokens or 0,
-                        }
-                    return (response.choices[0].message.content, model, usage)
-                raise ValueError("LLM returned empty response")
+                    if response and response.choices and response.choices[0].message.content:
+                        usage: Dict[str, Any] = {}
+                        if response.usage:
+                            usage = {
+                                "prompt_tokens": response.usage.prompt_tokens or 0,
+                                "completion_tokens": response.usage.completion_tokens or 0,
+                                "total_tokens": response.usage.total_tokens or 0,
+                            }
+                        return (response.choices[0].message.content, model, usage)
+                    raise ValueError("LLM returned empty response")
 
-            except Exception as e:
-                logger.warning(f"[LiteLLM] {model} failed: {e}")
-                last_error = e
-                continue
+                except Exception as e:
+                    if self._is_rate_limit_error(e) and attempt < max_retries - 1:
+                        wait_time = base_delay * (2 ** attempt)
+                        jitter = random.uniform(0, wait_time * 0.2)
+                        wait_time += jitter
+                        logger.warning(
+                            f"[LiteLLM] {model} rate-limited (attempt {attempt+1}/{max_retries}), "
+                            f"retrying in {wait_time:.1f}s..."
+                        )
+                        time.sleep(wait_time)
+                        continue
+                    logger.warning(f"[LiteLLM] {model} failed (attempt {attempt+1}/{max_retries}): {e}")
+                    last_error = e
+                    if not self._is_rate_limit_error(e):
+                        break
+            continue
 
         raise Exception(f"All LLM models failed (tried {len(models_to_try)} model(s)). Last error: {last_error}")
 
@@ -1948,25 +1977,25 @@ class GeminiAnalyzer:
     def batch_analyze(
         self, 
         contexts: List[Dict[str, Any]],
-        delay_between: float = 2.0
+        delay_between: float = 5.0
     ) -> List[AnalysisResult]:
         """
-        批量分析多只股票
+        Batch analyze multiple stocks
         
-        注意：为避免 API 速率限制，每次分析之间会有延迟
+        Note: To avoid API rate limiting, there is a delay between each analysis
         
         Args:
-            contexts: 上下文数据列表
-            delay_between: 每次分析之间的延迟（秒）
+            contexts: List of context data
+            delay_between: Delay between each analysis (seconds)
             
         Returns:
-            AnalysisResult 列表
+            List of AnalysisResult
         """
         results = []
         
         for i, context in enumerate(contexts):
             if i > 0:
-                logger.debug(f"等待 {delay_between} 秒后继续...")
+                logger.debug(f"Waiting {delay_between} seconds before continuing...")
                 time.sleep(delay_between)
             
             result = self.analyze(context)
@@ -1975,9 +2004,9 @@ class GeminiAnalyzer:
         return results
 
 
-# 便捷函数
+# Convenience function
 def get_analyzer() -> GeminiAnalyzer:
-    """获取 LLM 分析器实例"""
+    """Get LLM analyzer instance"""
     return GeminiAnalyzer()
 
 

@@ -1,347 +1,347 @@
-# 📖 完整配置与部署指南
+# 📖 Hướng Dẫn Cấu Hình & Triển Khai Đầy Đủ
 
-本文档包含 A股智能分析系统的完整配置说明，适合需要高级功能或特殊部署方式的用户。
+Tài liệu này chứa hướng dẫn cấu hình chi tiết cho hệ thống phân tích cổ phiếu thông minh, phù hợp cho người dùng cần tính năng nâng cao hoặc cách triển khai đặc biệt.
 
-> 💡 快速上手请参考 [README.md](../README.md)，本文档为进阶配置。
+> 💡 Để bắt đầu nhanh, vui lòng tham khảo [README.md](../README.md). Tài liệu này dành cho cấu hình nâng cao.
 
-## 📁 项目结构
+## 📁 Cấu Trúc Dự Án
 
 ```
 daily_stock_analysis/
-├── main.py              # 主程序入口
-├── src/                 # 核心业务逻辑
-│   ├── analyzer.py      # AI 分析器
-│   ├── config.py        # 配置管理
-│   ├── notification.py  # 消息推送
+├── main.py              # Điểm vào chính
+├── src/                 # Logic nghiệp vụ cốt lõi
+│   ├── analyzer.py      # Bộ phân tích AI
+│   ├── config.py        # Quản lý cấu hình
+│   ├── notification.py  # Đẩy tin thông báo
 │   └── ...
-├── data_provider/       # 多数据源适配器
-├── bot/                 # 机器人交互模块
-├── api/                 # FastAPI 后端服务
-├── apps/dsa-web/        # React 前端
-├── docker/              # Docker 配置
-├── docs/                # 项目文档
+├── data_provider/       # Bộ chuyển đổi đa nguồn dữ liệu
+├── bot/                 # Module tương tác bot
+├── api/                 # Dịch vụ FastAPI
+├── apps/dsa-web/        # React frontend
+├── docker/              # Cấu hình Docker
+├── docs/                # Tài liệu dự án
 └── .github/workflows/   # GitHub Actions
 ```
 
-## 📑 目录
+## 📑 Mục Lục
 
-- [项目结构](#项目结构)
-- [GitHub Actions 详细配置](#github-actions-详细配置)
-- [环境变量完整列表](#环境变量完整列表)
-- [Docker 部署](#docker-部署)
-- [本地运行详细配置](#本地运行详细配置)
-- [定时任务配置](#定时任务配置)
-- [通知渠道详细配置](#通知渠道详细配置)
-- [数据源配置](#数据源配置)
-- [高级功能](#高级功能)
-- [回测功能](#回测功能)
-- [本地 WebUI 管理界面](#本地-webui-管理界面)
+- [Cấu Trúc Dự Án](#cấu-trúc-dự-án)
+- [Cấu Hình GitHub Actions Chi Tiết](#cấu-hình-github-actions-chi-tiết)
+- [Danh Sách Đầy Đủ Biến Môi Trường](#danh-sách-đầy-đủ-biến-môi-trường)
+- [Triển Khai Docker](#triển-khai-docker)
+- [Cấu Hình Chạy Cục Bộ Chi Tiết](#cấu-hình-chạy-cục-bộ-chi-tiết)
+- [Cấu Hình Tác Vụ Định Kỳ](#cấu-hình-tác-vụ-định-kỳ)
+- [Cấu Hình Chi Tiết Kênh Thông Báo](#cấu-hình-chi-tiết-kênh-thông-báo)
+- [Cấu Hình Nguồn Dữ Liệu](#cấu-hình-nguồn-dữ-liệu)
+- [Tính Năng Nâng Cao](#tính-năng-nâng-cao)
+- [Chức Năng Backtest](#chức-năng-backtest)
+- [Giao Diện Quản Lý WebUI Cục Bộ](#giao-diện-quản-lý-webui-cục-bộ)
 
 ---
 
-## GitHub Actions 详细配置
+## Cấu Hình GitHub Actions Chi Tiết
 
-### 1. Fork 本仓库
+### 1. Fork Kho Lưu Trữ
 
-点击右上角 `Fork` 按钮
+Nhấn nút `Fork` ở góc trên phải
 
-### 2. 配置 Secrets
+### 2. Cấu Hình Secrets
 
-进入你 Fork 的仓库 → `Settings` → `Secrets and variables` → `Actions` → `New repository secret`
+Vào kho bạn đã Fork → `Settings` → `Secrets and variables` → `Actions` → `New repository secret`
 
 <div align="center">
-  <img src="../sources/secret_config.png" alt="GitHub Secrets 配置示意图" width="600">
+  <img src="../sources/secret_config.png" alt="Sơ đồ cấu hình GitHub Secrets" width="600">
 </div>
 
-#### AI 模型配置（二选一）
+#### Cấu Hình Mô Hình AI (chọn 1 trong 2)
 
-| Secret 名称 | 说明 | 必填 |
+| Tên Secret | Mô tả | Bắt buộc |
 |------------|------|:----:|
-| `GEMINI_API_KEY` | [Google AI Studio](https://aistudio.google.com/) 获取免费 Key | ✅* |
-| `OPENAI_API_KEY` | OpenAI 兼容 API Key（支持 DeepSeek、通义千问等） | 可选 |
-| `OPENAI_BASE_URL` | OpenAI 兼容 API 地址（如 `https://api.deepseek.com/v1`） | 可选 |
-| `OPENAI_MODEL` | 模型名称（如 `gemini-3.1-pro-preview`、`deepseek-chat`、`gpt-5.2`） | 可选 |
+| `GEMINI_API_KEY` | Lấy Key miễn phí từ [Google AI Studio](https://aistudio.google.com/) | ✅* |
+| `OPENAI_API_KEY` | OpenAI compatible API Key (hỗ trợ DeepSeek, Tongyi Qianwen...) | Tùy chọn |
+| `OPENAI_BASE_URL` | Địa chỉ OpenAI compatible API (vd `https://api.deepseek.com/v1`) | Tùy chọn |
+| `OPENAI_MODEL` | Tên mô hình (vd `gemini-3.1-pro-preview`, `deepseek-chat`, `gpt-5.2`) | Tùy chọn |
 
-> *注：`GEMINI_API_KEY` 和 `OPENAI_API_KEY` 至少配置一个
+> *Lưu ý: Ít nhất phải cấu hình một trong `GEMINI_API_KEY` hoặc `OPENAI_API_KEY`
 
-#### 通知渠道配置（可同时配置多个，全部推送）
+#### Cấu Hình Kênh Thông Báo (có thể cấu hình nhiều kênh, đẩy tin đồng thời)
 
-| Secret 名称 | 说明 | 必填 |
+| Tên Secret | Mô tả | Bắt buộc |
 |------------|------|:----:|
-| `WECHAT_WEBHOOK_URL` | 企业微信 Webhook URL | 可选 |
-| `FEISHU_WEBHOOK_URL` | 飞书 Webhook URL | 可选 |
-| `TELEGRAM_BOT_TOKEN` | Telegram Bot Token（@BotFather 获取） | 可选 |
-| `TELEGRAM_CHAT_ID` | Telegram Chat ID | 可选 |
-| `TELEGRAM_MESSAGE_THREAD_ID` | Telegram Topic ID (用于发送到子话题) | 可选 |
-| `DISCORD_WEBHOOK_URL` | Discord Webhook URL（[创建方法](https://support.discord.com/hc/en-us/articles/228383668)） | 可选 |
-| `DISCORD_BOT_TOKEN` | Discord Bot Token（与 Webhook 二选一） | 可选 |
-| `DISCORD_MAIN_CHANNEL_ID` | Discord Channel ID（使用 Bot 时需要） | 可选 |
-| `SLACK_BOT_TOKEN` | Slack Bot Token（推荐，支持图片上传；同时配置时优先于 Webhook） | 可选 |
-| `SLACK_CHANNEL_ID` | Slack Channel ID（使用 Bot 时需要） | 可选 |
-| `SLACK_WEBHOOK_URL` | Slack Incoming Webhook URL（仅文本，不支持图片） | 可选 |
-| `EMAIL_SENDER` | 发件人邮箱（如 `xxx@qq.com`） | 可选 |
-| `EMAIL_PASSWORD` | 邮箱授权码（非登录密码） | 可选 |
-| `EMAIL_RECEIVERS` | 收件人邮箱（多个用逗号分隔，留空则发给自己） | 可选 |
-| `EMAIL_SENDER_NAME` | 发件人显示名称（默认：daily_stock_analysis股票分析助手） | 可选 |
-| `PUSHPLUS_TOKEN` | PushPlus Token（[获取地址](https://www.pushplus.plus)，国内推送服务） | 可选 |
-| `SERVERCHAN3_SENDKEY` | Server酱³ Sendkey（[获取地址](https://sc3.ft07.com/)，手机APP推送服务） | 可选 |
-| `CUSTOM_WEBHOOK_URLS` | 自定义 Webhook（支持钉钉等，多个用逗号分隔） | 可选 |
-| `CUSTOM_WEBHOOK_BEARER_TOKEN` | 自定义 Webhook 的 Bearer Token（用于需要认证的 Webhook） | 可选 |
-| `WEBHOOK_VERIFY_SSL` | Webhook HTTPS 证书校验（默认 true）。设为 false 可支持自签名证书。警告：关闭有严重安全风险（MITM），仅限可信内网 | 可选 |
+| `WECHAT_WEBHOOK_URL` | WeChat Work Webhook URL | Tùy chọn |
+| `FEISHU_WEBHOOK_URL` | Feishu Webhook URL | Tùy chọn |
+| `TELEGRAM_BOT_TOKEN` | Telegram Bot Token (lấy từ @BotFather) | Tùy chọn |
+| `TELEGRAM_CHAT_ID` | Telegram Chat ID | Tùy chọn |
+| `TELEGRAM_MESSAGE_THREAD_ID` | Telegram Topic ID (dùng để gửi vào sub-topic) | Tùy chọn |
+| `DISCORD_WEBHOOK_URL` | Discord Webhook URL ([cách tạo](https://support.discord.com/hc/en-us/articles/228383668)) | Tùy chọn |
+| `DISCORD_BOT_TOKEN` | Discord Bot Token (chọn 1 trong 2 với Webhook) | Tùy chọn |
+| `DISCORD_MAIN_CHANNEL_ID` | Discord Channel ID (cần khi dùng Bot) | Tùy chọn |
+| `SLACK_BOT_TOKEN` | Slack Bot Token (khuyến nghị, hỗ trợ upload ảnh; ưu tiên hơn Webhook khi cấu hình cả hai) | Tùy chọn |
+| `SLACK_CHANNEL_ID` | Slack Channel ID (cần khi dùng Bot) | Tùy chọn |
+| `SLACK_WEBHOOK_URL` | Slack Incoming Webhook URL (chỉ text, không hỗ trợ ảnh) | Tùy chọn |
+| `EMAIL_SENDER` | Email người gửi (vd `xxx@qq.com`) | Tùy chọn |
+| `EMAIL_PASSWORD` | Mật khẩu ủy quyền email (không phải mật khẩu đăng nhập) | Tùy chọn |
+| `EMAIL_RECEIVERS` | Email người nhận (cách nhau bởi dấu phẩy, để trống thì gửi cho chính mình) | Tùy chọn |
+| `EMAIL_SENDER_NAME` | Tên hiển thị người gửi (mặc định: daily_stock_analysis股票分析助手) | Tùy chọn |
+| `PUSHPLUS_TOKEN` | PushPlus Token ([lấy tại đây](https://www.pushplus.plus), dịch vụ đẩy tin nội địa TQ) | Tùy chọn |
+| `SERVERCHAN3_SENDKEY` | Server³ Sendkey ([lấy tại đây](https://sc3.ft07.com/), dịch vụ đẩy tin qua app điện thoại) | Tùy chọn |
+| `CUSTOM_WEBHOOK_URLS` | Custom Webhook (hỗ trợ DingTalk..., cách nhau bởi dấu phẩy) | Tùy chọn |
+| `CUSTOM_WEBHOOK_BEARER_TOKEN` | Bearer Token cho Custom Webhook (dùng cho webhook cần xác thực) | Tùy chọn |
+| `WEBHOOK_VERIFY_SSL` | Xác thực chứng chỉ HTTPS cho Webhook (mặc định true). Đặt false để hỗ trợ chứng chỉ tự ký. Cảnh báo: tắt có rủi ro bảo mật nghiêm trọng (MITM), chỉ dùng cho intranet đáng tin | Tùy chọn |
 
-> *注：至少配置一个渠道，配置多个则同时推送
+> *Lưu ý: Ít nhất phải cấu hình một kênh, nếu cấu hình nhiều kênh sẽ đẩy tin đồng thời
 
-#### 推送行为配置
+#### Cấu Hình Hành Vi Đẩy Tin
 
-| Secret 名称 | 说明 | 必填 |
+| Tên Secret | Mô tả | Bắt buộc |
 |------------|------|:----:|
-| `SINGLE_STOCK_NOTIFY` | 单股推送模式：设为 `true` 则每分析完一只股票立即推送 | 可选 |
-| `REPORT_TYPE` | 报告类型：`simple`(精简)、`full`(完整)、`brief`(3-5句概括)，Docker环境推荐设为 `full` | 可选 |
-| `REPORT_LANGUAGE` | 报告输出语言：`zh`(默认中文) / `en`(英文)；会同步影响 Prompt、模板、通知 fallback 与 Web 报告页固定文案 | 可选 |
-| `REPORT_SUMMARY_ONLY` | 仅分析结果摘要：设为 `true` 时只推送汇总，不含个股详情；多股时适合快速浏览（默认 false，Issue #262） | 可选 |
-| `REPORT_TEMPLATES_DIR` | Jinja2 模板目录（相对项目根，默认 `templates`） | 可选 |
-| `REPORT_RENDERER_ENABLED` | 启用 Jinja2 模板渲染（默认 `false`，保证零回归） | 可选 |
-| `REPORT_INTEGRITY_ENABLED` | 启用报告完整性校验，缺失必填字段时重试或占位补全（默认 `true`） | 可选 |
-| `REPORT_INTEGRITY_RETRY` | 完整性校验重试次数（默认 `1`，`0` 表示仅占位不重试） | 可选 |
-| `REPORT_HISTORY_COMPARE_N` | 历史信号对比条数，`0` 关闭（默认），`>0` 启用 | 可选 |
-| `ANALYSIS_DELAY` | 个股分析和大盘分析之间的延迟（秒），避免API限流，如 `10` | 可选 |
-| `MERGE_EMAIL_NOTIFICATION` | 个股与大盘复盘合并推送（默认 false），减少邮件数量、降低垃圾邮件风险；与 `SINGLE_STOCK_NOTIFY` 互斥（单股模式下合并不生效） | 可选 |
-| `MARKDOWN_TO_IMAGE_CHANNELS` | 将 Markdown 转为图片发送的渠道（用逗号分隔）：telegram,wechat,custom,email,slack；单股推送需同时配置且安装转图工具 | 可选 |
-| `MARKDOWN_TO_IMAGE_MAX_CHARS` | 超过此长度不转图片，避免超大图片（默认 15000） | 可选 |
-| `MD2IMG_ENGINE` | 转图引擎：`wkhtmltoimage`（默认，需 wkhtmltopdf）或 `markdown-to-file`（emoji 更好，需 `npm i -g markdown-to-file`） | 可选 |
-| `PREFETCH_REALTIME_QUOTES` | 设为 `false` 可禁用实时行情预取，避免 efinance/akshare_em 全市场拉取（默认 true） | 可选 |
+| `SINGLE_STOCK_NOTIFY` | Chế độ đẩy từng mã: đặt `true` để đẩy tin ngay sau khi phân tích xong mỗi mã | Tùy chọn |
+| `REPORT_TYPE` | Loại báo cáo: `simple`(rút gọn), `full`(đầy đủ), `brief`(3-5 câu tóm tắt), khuyến nghị đặt `full` cho môi trường Docker | Tùy chọn |
+| `REPORT_LANGUAGE` | Ngôn ngữ xuất báo cáo: `zh`(mặc định tiếng Trung) / `en`(tiếng Anh) / `vi`(tiếng Việt); ảnh hưởng đồng thời đến Prompt, template, notification fallback và văn bản cố định trên trang Web report | Tùy chọn |
+| `REPORT_SUMMARY_ONLY` | Chỉ tóm tắt kết quả phân tích: đặt `true` chỉ đẩy tin tổng hợp, không có chi tiết từng mã; phù hợp xem nhanh khi nhiều mã (mặc định false, Issue #262) | Tùy chọn |
+| `REPORT_TEMPLATES_DIR` | Thư mục template Jinja2 (tương đối so với gốc dự án, mặc định `templates`) | Tùy chọn |
+| `REPORT_RENDERER_ENABLED` | Bật render template Jinja2 (mặc định `false`, đảm bảo zero regression) | Tùy chọn |
+| `REPORT_INTEGRITY_ENABLED` | Bật kiểm tra tính toàn vẹn báo cáo, thử lại hoặc điền placeholder khi thiếu trường bắt buộc (mặc định `true`) | Tùy chọn |
+| `REPORT_INTEGRITY_RETRY` | Số lần thử lại kiểm tra toàn vẹn (mặc định `1`, `0` nghĩa là chỉ điền placeholder không thử lại) | Tùy chọn |
+| `REPORT_HISTORY_COMPARE_N` | Số lượng tín hiệu lịch sử để so sánh, `0` tắt (mặc định), `>0` bật | Tùy chọn |
+| `ANALYSIS_DELAY` | Độ trễ giữa phân tích个股 và大盘 (giây), tránh API rate limit, vd `10` | Tùy chọn |
+| `MERGE_EMAIL_NOTIFICATION` | Gộp đẩy tin个股 và大盘复盘 (mặc định false), giảm số lượng email, giảm nguy cơ spam; loại trừ lẫn nhau với `SINGLE_STOCK_NOTIFY` (không hiệu lực trong chế độ单股) | Tùy chọn |
+| `MARKDOWN_TO_IMAGE_CHANNELS` | Kênh gửi Markdown chuyển thành ảnh (cách nhau bởi dấu phẩy): telegram,wechat,custom,email,slack; chế độ单股 cần cấu hình đồng thời và cài công cụ chuyển ảnh | Tùy chọn |
+| `MARKDOWN_TO_IMAGE_MAX_CHARS` | Không chuyển ảnh nếu vượt quá độ dài này, tránh ảnh siêu lớn (mặc định 15000) | Tùy chọn |
+| `MD2IMG_ENGINE` | Engine chuyển ảnh: `wkhtmltoimage` (mặc định, cần wkhtmltopdf) hoặc `markdown-to-file` (emoji đẹp hơn, cần `npm i -g markdown-to-file`) | Tùy chọn |
+| `PREFETCH_REALTIME_QUOTES` | Đặt `false` để tắt prefetch realtime quote, tránh efinance/akshare_em kéo toàn thị trường (mặc định true) | Tùy chọn |
 
-#### 其他配置
+#### Cấu Hình Khác
 
-| Secret 名称 | 说明 | 必填 |
+| Tên Secret | Mô tả | Bắt buộc |
 |------------|------|:----:|
-| `STOCK_LIST` | 自选股代码，如 `600519,300750,002594` | ✅ |
-| `TAVILY_API_KEYS` | [Tavily](https://tavily.com/) 搜索 API（新闻搜索） | 推荐 |
-| `MINIMAX_API_KEYS` | [MiniMax](https://platform.minimaxi.com/) Coding Plan Web Search（结构化搜索结果） | 可选 |
-| `BOCHA_API_KEYS` | [博查搜索](https://open.bocha.cn/) Web Search API（中文搜索优化，支持AI摘要，多个key用逗号分隔） | 可选 |
-| `BRAVE_API_KEYS` | [Brave Search](https://brave.com/search/api/) API（隐私优先，美股优化，多个key用逗号分隔） | 可选 |
-| `SERPAPI_API_KEYS` | [SerpAPI](https://serpapi.com/baidu-search-api?utm_source=github_daily_stock_analysis) 备用搜索 | 可选 |
-| `SEARXNG_BASE_URLS` | SearXNG 自建实例（无配额兜底，需在 settings.yml 启用 format: json）；留空时默认自动发现公共实例 | 可选 |
-| `SEARXNG_PUBLIC_INSTANCES_ENABLED` | 是否在 `SEARXNG_BASE_URLS` 为空时自动从 `searx.space` 获取公共实例（默认 `true`） | 可选 |
-| `TUSHARE_TOKEN` | [Tushare Pro](https://tushare.pro/weborder/#/login?reg=834638 ) Token | 可选 |
-| `ENABLE_CHIP_DISTRIBUTION` | 启用筹码分布（Actions 默认 false；需筹码数据时在 Variables 中设为 true，接口可能不稳定） | 可选 |
+| `STOCK_LIST` | Mã cổ phiếu tự chọn, vd `600519,300750,002594` | ✅ |
+| `TAVILY_API_KEYS` | [Tavily](https://tavily.com/) Search API (tìm kiếm tin tức) | Khuyến nghị |
+| `MINIMAX_API_KEYS` | [MiniMax](https://platform.minimaxi.com/) Coding Plan Web Search (kết quả tìm kiếm có cấu trúc) | Tùy chọn |
+| `BOCHA_API_KEYS` | [Bocha Search](https://open.bocha.cn/) Web Search API (tối ưu tiếng Trung, hỗ trợ tóm tắt AI, nhiều key cách nhau bởi dấu phẩy) | Tùy chọn |
+| `BRAVE_API_KEYS` | [Brave Search](https://brave.com/search/api/) API (ưu tiên quyền riêng tư, tối ưu美股, nhiều key cách nhau bởi dấu phẩy) | Tùy chọn |
+| `SERPAPI_API_KEYS` | [SerpAPI](https://serpapi.com/baidu-search-api?utm_source=github_daily_stock_analysis) dự phòng | Tùy chọn |
+| `SEARXNG_BASE_URLS` | SearXNG tự dựng (dự phòng không giới hạn quota, cần bật format: json trong settings.yml); để trống sẽ tự động phát hiện public instance | Tùy chọn |
+| `SEARXNG_PUBLIC_INSTANCES_ENABLED` | Có tự động lấy public instance từ `searx.space` khi `SEARXNG_BASE_URLS` trống (mặc định `true`) | Tùy chọn |
+| `TUSHARE_TOKEN` | [Tushare Pro](https://tushare.pro/weborder/#/login?reg=834638) Token | Tùy chọn |
+| `ENABLE_CHIP_DISTRIBUTION` | Bật phân tích筹码分布 (Actions mặc định false; cần dữ liệuchấm khi cấu hình trong Variables thành true, interface có thể không ổn định) | Tùy chọn |
 
-#### ✅ 最小配置示例
+#### ✅ Ví Dụ Cấu Hình Tối Thiểu
 
-如果你想快速开始，最少需要配置以下项：
+Nếu bạn muốn bắt đầu nhanh, tối thiểu cần cấu hình:
 
-1. **AI 模型**：`AIHUBMIX_KEY`（[AIHubmix](https://aihubmix.com/?aff=CfMq)，一 Key 多模型）、`GEMINI_API_KEY` 或 `OPENAI_API_KEY`
-2. **通知渠道**：至少配置一个，如 `WECHAT_WEBHOOK_URL` 或 `EMAIL_SENDER` + `EMAIL_PASSWORD`
-3. **股票列表**：`STOCK_LIST`（必填）
-4. **搜索 API**：`TAVILY_API_KEYS`（强烈推荐，用于新闻搜索）
+1. **Mô hình AI**: `AIHUBMIX_KEY` ([AIHubmix](https://aihubmix.com/?aff=CfMq), một Key đa mô hình), `GEMINI_API_KEY` hoặc `OPENAI_API_KEY`
+2. **Kênh thông báo**: Ít nhất một kênh, vd `WECHAT_WEBHOOK_URL` hoặc `EMAIL_SENDER` + `EMAIL_PASSWORD`
+3. **Danh sách cổ phiếu**: `STOCK_LIST` (bắt buộc)
+4. **Search API**: `TAVILY_API_KEYS` (khuyến nghị mạnh, dùng cho tìm kiếm tin tức)
 
-> 💡 配置完以上 4 项即可开始使用！
+> 💡 Sau khi cấu hình 4 mục trên là có thể bắt đầu sử dụng!
 
-### 3. 启用 Actions
+### 3. Bật Actions
 
-1. 进入你 Fork 的仓库
-2. 点击顶部的 `Actions` 标签
-3. 如果看到提示，点击 `I understand my workflows, go ahead and enable them`
+1. Vào kho bạn đã Fork
+2. Nhấn tab `Actions`
+3. Nếu thấy thông báo nhắc nhở, nhấn `I understand my workflows, go ahead and enable them`
 
-### 4. 手动测试
+### 4. Kiểm Tra Thủ Công
 
-1. 进入 `Actions` 标签
-2. 左侧选择 `每日股票分析` workflow
-3. 点击右侧的 `Run workflow` 按钮
-4. 选择运行模式
-5. 点击绿色的 `Run workflow` 确认
+1. Vào tab `Actions`
+2. Chọn workflow `每日股票分析` ở cột trái
+3. Nhấn nút `Run workflow` ở cột phải
+4. Chọn chế độ chạy
+5. Nhấn `Run workflow` màu xanh để xác nhận
 
-### 5. 完成！
+### 5. Hoàn Tất!
 
-默认每个工作日 **18:00（北京时间）** 自动执行。
+Mặc định tự động thực thi vào **18:00 (giờ Bắc Kinh)** mỗi ngày làm việc.
 
 ---
 
-## 环境变量完整列表
+## Danh Sách Đầy Đủ Biến Môi Trường
 
-### AI 模型配置
+### Cấu Hình Mô Hình AI
 
-> 完整说明见 [LLM 配置指南](LLM_CONFIG_GUIDE.md)（三层配置、渠道模式、Vision、Agent、排错）。
+> Xem chi tiết tại [Hướng Dẫn Cấu Hình LLM](LLM_CONFIG_GUIDE.md) (cấu hình 3 lớp, chế độ kênh, Vision, Agent, xử lý sự cố).
 
-| 变量名 | 说明 | 默认值 | 必填 |
+| Tên biến | Mô tả | Giá trị mặc định | Bắt buộc |
 |--------|------|--------|:----:|
-| `LITELLM_MODEL` | 主模型，格式 `provider/model`（如 `gemini/gemini-2.5-flash`），推荐优先使用 | - | 否 |
-| `AGENT_LITELLM_MODEL` | Agent 主模型（可选）；留空继承 `LITELLM_MODEL`，无 provider 前缀按 `openai/<model>` 解析 | - | 否 |
-| `LITELLM_FALLBACK_MODELS` | 备选模型，逗号分隔 | - | 否 |
-| `LLM_CHANNELS` | 渠道名称列表（逗号分隔），配合 `LLM_{NAME}_*` 使用，详见 [LLM 配置指南](LLM_CONFIG_GUIDE.md) | - | 否 |
-| `LITELLM_CONFIG` | LiteLLM YAML 配置文件路径（高级） | - | 否 |
-| `AIHUBMIX_KEY` | [AIHubmix](https://aihubmix.com/?aff=CfMq) API Key，一 Key 切换使用全系模型，无需额外配置 Base URL | - | 可选 |
-| `GEMINI_API_KEY` | Google Gemini API Key | - | 可选 |
-| `GEMINI_MODEL` | 主模型名称（legacy，`LITELLM_MODEL` 优先） | `gemini-3-flash-preview` | 否 |
-| `GEMINI_MODEL_FALLBACK` | 备选模型（legacy） | `gemini-2.5-flash` | 否 |
-| `OPENAI_API_KEY` | OpenAI 兼容 API Key | - | 可选 |
-| `OPENAI_BASE_URL` | OpenAI 兼容 API 地址 | - | 可选 |
-| `OLLAMA_API_BASE` | Ollama 本地服务地址（如 `http://localhost:11434`），详见 [LLM 配置指南](LLM_CONFIG_GUIDE.md) | - | 可选 |
-| `OPENAI_MODEL` | OpenAI 模型名称（legacy，AIHubmix 用户可填如 `gemini-3.1-pro-preview`、`gpt-5.2`） | `gpt-5.2` | 可选 |
-| `ANTHROPIC_API_KEY` | Anthropic Claude API Key | - | 可选 |
-| `ANTHROPIC_MODEL` | Claude 模型名称 | `claude-3-5-sonnet-20241022` | 可选 |
-| `ANTHROPIC_TEMPERATURE` | Claude 温度参数（0.0-1.0） | `0.7` | 可选 |
-| `ANTHROPIC_MAX_TOKENS` | Claude 响应最大 token 数 | `8192` | 可选 |
+| `LITELLM_MODEL` | Mô hình chính, định dạng `provider/model` (vd `gemini/gemini-2.5-flash`), khuyến nghị ưu tiên sử dụng | - | Không |
+| `AGENT_LITELLM_MODEL` | Mô hình chính cho Agent (tùy chọn); để trống kế thừa `LITELLM_MODEL`, không có prefix provider sẽ phân tích theo `openai/<model>` | - | Không |
+| `LITELLM_FALLBACK_MODELS` | Mô hình dự phòng, cách nhau bởi dấu phẩy | - | Không |
+| `LLM_CHANNELS` | Danh sách tên kênh (cách nhau bởi dấu phẩy), dùng kèm `LLM_{NAME}_*`, xem [Hướng Dẫn Cấu Hình LLM](LLM_CONFIG_GUIDE.md) | - | Không |
+| `LITELLM_CONFIG` | Đường dẫn file cấu hình LiteLLM YAML (nâng cao) | - | Không |
+| `AIHUBMIX_KEY` | [AIHubmix](https://aihubmix.com/?aff=CfMq) API Key, một Key chuyển đổi toàn bộ mô hình, không cần cấu hình thêm Base URL | - | Tùy chọn |
+| `GEMINI_API_KEY` | Google Gemini API Key | - | Tùy chọn |
+| `GEMINI_MODEL` | Tên mô hình chính (legacy, ưu tiên `LITELLM_MODEL`) | `gemini-3-flash-preview` | Không |
+| `GEMINI_MODEL_FALLBACK` | Mô hình dự phòng (legacy) | `gemini-2.5-flash` | Không |
+| `OPENAI_API_KEY` | OpenAI compatible API Key | - | Tùy chọn |
+| `OPENAI_BASE_URL` | OpenAI compatible API URL | - | Tùy chọn |
+| `OLLAMA_API_BASE` | Địa chỉ dịch vụ Ollama cục bộ (vd `http://localhost:11434`), xem [Hướng Dẫn Cấu Hình LLM](LLM_CONFIG_GUIDE.md) | - | Tùy chọn |
+| `OPENAI_MODEL` | Tên mô hình OpenAI (legacy, người dùng AIHubmix có thể điền vd `gemini-3.1-pro-preview`, `gpt-5.2`) | `gpt-5.2` | Tùy chọn |
+| `ANTHROPIC_API_KEY` | Anthropic Claude API Key | - | Tùy chọn |
+| `ANTHROPIC_MODEL` | Tên mô hình Claude | `claude-3-5-sonnet-20241022` | Tùy chọn |
+| `ANTHROPIC_TEMPERATURE` | Tham số nhiệt độ Claude (0.0-1.0) | `0.7` | Tùy chọn |
+| `ANTHROPIC_MAX_TOKENS` | Số token tối đa phản hồi Claude | `8192` | Tùy chọn |
 
-> *注：`AIHUBMIX_KEY`、`GEMINI_API_KEY`、`ANTHROPIC_API_KEY`、`OPENAI_API_KEY` 或 `OLLAMA_API_BASE` 至少配置一个。`AIHUBMIX_KEY` 无需配置 `OPENAI_BASE_URL`，系统自动适配。
+> *Lưu ý: Ít nhất phải cấu hình một trong `AIHUBMIX_KEY`, `GEMINI_API_KEY`, `ANTHROPIC_API_KEY`, `OPENAI_API_KEY` hoặc `OLLAMA_API_BASE`. Người dùng `AIHUBMIX_KEY` không cần cấu hình `OPENAI_BASE_URL`, hệ thống tự động适配.
 
-### 通知渠道配置
+### Cấu Hình Kênh Thông Báo
 
-| 变量名 | 说明 | 必填 |
+| Tên biến | Mô tả | Bắt buộc |
 |--------|------|:----:|
-| `WECHAT_WEBHOOK_URL` | 企业微信机器人 Webhook URL | 可选 |
-| `FEISHU_WEBHOOK_URL` | 飞书机器人 Webhook URL | 可选 |
-| `TELEGRAM_BOT_TOKEN` | Telegram Bot Token | 可选 |
-| `TELEGRAM_CHAT_ID` | Telegram Chat ID | 可选 |
-| `TELEGRAM_MESSAGE_THREAD_ID` | Telegram Topic ID | 可选 |
-| `DISCORD_WEBHOOK_URL` | Discord Webhook URL | 可选 |
-| `DISCORD_BOT_TOKEN` | Discord Bot Token（与 Webhook 二选一） | 可选 |
-| `DISCORD_MAIN_CHANNEL_ID` | Discord Channel ID（使用 Bot 时需要） | 可选 |
-| `DISCORD_MAX_WORDS` | Discord 最大字数限制（默认 免费服务器限制2000） | 可选 |
-| `SLACK_BOT_TOKEN` | Slack Bot Token（推荐，支持图片上传；同时配置时优先于 Webhook） | 可选 |
-| `SLACK_CHANNEL_ID` | Slack Channel ID（使用 Bot 时需要） | 可选 |
-| `SLACK_WEBHOOK_URL` | Slack Incoming Webhook URL（仅文本，不支持图片） | 可选 |
-| `EMAIL_SENDER` | 发件人邮箱 | 可选 |
-| `EMAIL_PASSWORD` | 邮箱授权码（非登录密码） | 可选 |
-| `EMAIL_RECEIVERS` | 收件人邮箱（逗号分隔，留空发给自己） | 可选 |
-| `EMAIL_SENDER_NAME` | 发件人显示名称 | 可选 |
-| `STOCK_GROUP_N` / `EMAIL_GROUP_N` | 股票分组发往不同邮箱（Issue #268），如 `STOCK_GROUP_1=600519,300750` 与 `EMAIL_GROUP_1=user1@example.com` 配对 | 可选 |
-| `CUSTOM_WEBHOOK_URLS` | 自定义 Webhook（逗号分隔） | 可选 |
-| `CUSTOM_WEBHOOK_BEARER_TOKEN` | 自定义 Webhook Bearer Token | 可选 |
-| `WEBHOOK_VERIFY_SSL` | Webhook HTTPS 证书校验（默认 true）。设为 false 可支持自签名。警告：关闭有严重安全风险 | 可选 |
-| `PUSHOVER_USER_KEY` | Pushover 用户 Key | 可选 |
-| `PUSHOVER_API_TOKEN` | Pushover API Token | 可选 |
-| `PUSHPLUS_TOKEN` | PushPlus Token（国内推送服务） | 可选 |
-| `SERVERCHAN3_SENDKEY` | Server酱³ Sendkey | 可选 |
+| `WECHAT_WEBHOOK_URL` | WeChat Work robot Webhook URL | Tùy chọn |
+| `FEISHU_WEBHOOK_URL` | Feishu robot Webhook URL | Tùy chọn |
+| `TELEGRAM_BOT_TOKEN` | Telegram Bot Token | Tùy chọn |
+| `TELEGRAM_CHAT_ID` | Telegram Chat ID | Tùy chọn |
+| `TELEGRAM_MESSAGE_THREAD_ID` | Telegram Topic ID | Tùy chọn |
+| `DISCORD_WEBHOOK_URL` | Discord Webhook URL | Tùy chọn |
+| `DISCORD_BOT_TOKEN` | Discord Bot Token (chọn 1 trong 2 với Webhook) | Tùy chọn |
+| `DISCORD_MAIN_CHANNEL_ID` | Discord Channel ID (cần khi dùng Bot) | Tùy chọn |
+| `DISCORD_MAX_WORDS` | Giới hạn số từ tối đa Discord (mặc định giới hạn server miễn phí 2000) | Tùy chọn |
+| `SLACK_BOT_TOKEN` | Slack Bot Token (khuyến nghị, hỗ trợ upload ảnh; ưu tiên hơn Webhook khi cấu hình cả hai) | Tùy chọn |
+| `SLACK_CHANNEL_ID` | Slack Channel ID (cần khi dùng Bot) | Tùy chọn |
+| `SLACK_WEBHOOK_URL` | Slack Incoming Webhook URL (chỉ text, không hỗ trợ ảnh) | Tùy chọn |
+| `EMAIL_SENDER` | Email người gửi | Tùy chọn |
+| `EMAIL_PASSWORD` | Mật khẩu ủy quyền email (không phải mật khẩu đăng nhập) | Tùy chọn |
+| `EMAIL_RECEIVERS` | Email người nhận (cách nhau bởi dấu phẩy, để trống gửi cho mình) | Tùy chọn |
+| `EMAIL_SENDER_NAME` | Tên hiển thị người gửi | Tùy chọn |
+| `STOCK_GROUP_N` / `EMAIL_GROUP_N` | Nhóm cổ phiếu gửi đến email khác nhau (Issue #268), vd `STOCK_GROUP_1=600519,300750`配对 với `EMAIL_GROUP_1=user1@example.com` | Tùy chọn |
+| `CUSTOM_WEBHOOK_URLS` | Custom Webhook (cách nhau bởi dấu phẩy) | Tùy chọn |
+| `CUSTOM_WEBHOOK_BEARER_TOKEN` | Custom Webhook Bearer Token | Tùy chọn |
+| `WEBHOOK_VERIFY_SSL` | Xác thực chứng chỉ HTTPS Webhook (mặc định true). Đặt false để hỗ trợ tự ký. Cảnh báo: tắt có rủi ro bảo mật nghiêm trọng | Tùy chọn |
+| `PUSHOVER_USER_KEY` | Pushover User Key | Tùy chọn |
+| `PUSHOVER_API_TOKEN` | Pushover API Token | Tùy chọn |
+| `PUSHPLUS_TOKEN` | PushPlus Token (dịch vụ đẩy tin nội địa TQ) | Tùy chọn |
+| `SERVERCHAN3_SENDKEY` | Server³ Sendkey | Tùy chọn |
 
-#### 飞书云文档配置（可选，解决消息截断问题）
+#### Cấu Hình Feishu Cloud Document (tùy chọn, giải quyết vấn đề tin nhắn bị cắt)
 
-| 变量名 | 说明 | 必填 |
+| Tên biến | Mô tả | Bắt buộc |
 |--------|------|:----:|
-| `FEISHU_APP_ID` | 飞书应用 ID | 可选 |
-| `FEISHU_APP_SECRET` | 飞书应用 Secret | 可选 |
-| `FEISHU_FOLDER_TOKEN` | 飞书云盘文件夹 Token | 可选 |
+| `FEISHU_APP_ID` | Feishu App ID | Tùy chọn |
+| `FEISHU_APP_SECRET` | Feishu App Secret | Tùy chọn |
+| `FEISHU_FOLDER_TOKEN` | Feishu Cloud Drive Folder Token | Tùy chọn |
 
-> 飞书云文档配置步骤：
-> 1. 在 [飞书开发者后台](https://open.feishu.cn/app) 创建应用
-> 2. 配置 GitHub Secrets
-> 3. 创建群组并添加应用机器人
-> 4. 在云盘文件夹中添加群组为协作者（可管理权限）
+> Các bước cấu hình Feishu Cloud Document:
+> 1. Tạo ứng dụng tại [Feishu Developer Console](https://open.feishu.cn/app)
+> 2. Cấu hình GitHub Secrets
+> 3. Tạo nhóm và thêm robot ứng dụng
+> 4. Thêm nhóm vào folder cloud với quyền cộng tác viên (quản lý)
 
-### 搜索服务配置
+### Cấu Hình Dịch Vụ Tìm Kiếm
 
-| 变量名 | 说明 | 必填 |
+| Tên biến | Mô tả | Bắt buộc |
 |--------|------|:----:|
-| `TAVILY_API_KEYS` | Tavily 搜索 API Key（推荐） | 推荐 |
-| `MINIMAX_API_KEYS` | MiniMax Coding Plan Web Search（结构化搜索结果） | 可选 |
-| `BOCHA_API_KEYS` | 博查搜索 API Key（中文优化） | 可选 |
-| `BRAVE_API_KEYS` | Brave Search API Key（美股优化） | 可选 |
-| `SERPAPI_API_KEYS` | SerpAPI 备用搜索 | 可选 |
-| `SEARXNG_BASE_URLS` | SearXNG 自建实例（无配额兜底，需在 settings.yml 启用 format: json）；留空时默认自动发现公共实例 | 可选 |
-| `SEARXNG_PUBLIC_INSTANCES_ENABLED` | 是否在 `SEARXNG_BASE_URLS` 为空时自动从 `searx.space` 获取公共实例（默认 `true`） | 可选 |
-| `NEWS_STRATEGY_PROFILE` | 新闻策略窗口档位：`ultra_short`(1天)/`short`(3天)/`medium`(7天)/`long`(30天)；实际窗口取与 `NEWS_MAX_AGE_DAYS` 的最小值 | 默认 `short` |
-| `NEWS_MAX_AGE_DAYS` | 新闻最大时效（天），搜索时限制结果在近期内 | 默认 `3` |
-| `BIAS_THRESHOLD` | 乖离率阈值（%），超过提示不追高；强势趋势股自动放宽到 1.5 倍 | 默认 `5.0` |
+| `TAVILY_API_KEYS` | Tavily Search API Key (khuyến nghị) | Khuyến nghị |
+| `MINIMAX_API_KEYS` | MiniMax Coding Plan Web Search (kết quả tìm kiếm có cấu trúc) | Tùy chọn |
+| `BOCHA_API_KEYS` | Bocha Search API Key (tối ưu tiếng Trung) | Tùy chọn |
+| `BRAVE_API_KEYS` | Brave Search API Key (tối ưu美股) | Tùy chọn |
+| `SERPAPI_API_KEYS` | SerpAPI dự phòng | Tùy chọn |
+| `SEARXNG_BASE_URLS` | SearXNG tự dựng (dự phòng không giới hạn quota, cần bật format: json trong settings.yml); để trống sẽ tự động phát hiện public instance | Tùy chọn |
+| `SEARXNG_PUBLIC_INSTANCES_ENABLED` | Có tự động lấy public instance từ `searx.space` khi `SEARXNG_BASE_URLS` trống (mặc định `true`) | Tùy chọn |
+| `NEWS_STRATEGY_PROFILE` | Cấu hình cửa sổ chiến lược tin tức: `ultra_short`(1 ngày)/`short`(3 ngày)/`medium`(7 ngày)/`long`(30 ngày); cửa sổ thực tế lấy giá trị nhỏ nhất với `NEWS_MAX_AGE_DAYS` | Mặc định `short` |
+| `NEWS_MAX_AGE_DAYS` | Thời hạn tin tức tối đa (ngày), giới hạn kết quả tìm kiếm trong khoảng này | Mặc định `3` |
+| `BIAS_THRESHOLD` | Ngưỡng lệch giá (%), vượt quá sẽ cảnh báo không đuổi theo đỉnh; cổ phiếu xu hướng mạnh tự động nới lỏng 1.5 lần | Mặc định `5.0` |
 
-### 数据源配置
+### Cấu Hình Nguồn Dữ Liệu
 
-| 变量名 | 说明 | 默认值 | 必填 |
+| Tên biến | Mô tả | Giá trị mặc định | Bắt buộc |
 |--------|------|--------|:----:|
-| `TUSHARE_TOKEN` | Tushare Pro Token | - | 可选 |
-| `TICKFLOW_API_KEY` | TickFlow API Key；配置后 A 股大盘复盘指数优先尝试 TickFlow，若套餐支持标的池查询则市场统计也会优先尝试 TickFlow | - | 可选 |
-| `ENABLE_REALTIME_QUOTE` | 启用实时行情（关闭后使用历史收盘价分析） | `true` | 可选 |
-| `ENABLE_REALTIME_TECHNICAL_INDICATORS` | 盘中实时技术面：启用时用实时价计算 MA5/MA10/MA20 与多头排列（Issue #234）；关闭则用昨日收盘 | `true` | 可选 |
-| `ENABLE_CHIP_DISTRIBUTION` | 启用筹码分布分析（该接口不稳定，云端部署建议关闭）。GitHub Actions 用户需在 Repository Variables 中设置 `ENABLE_CHIP_DISTRIBUTION=true` 方可启用；workflow 默认关闭。 | `true` | 可选 |
-| `ENABLE_EASTMONEY_PATCH` | 东财接口补丁：东财接口频繁失败（如 RemoteDisconnected、连接被关闭）时建议设为 `true`，注入 NID 令牌与随机 User-Agent 以降低被限流概率 | `false` | 可选 |
-| `REALTIME_SOURCE_PRIORITY` | 实时行情数据源优先级（逗号分隔），如 `tencent,akshare_sina,efinance,akshare_em` | 见 .env.example | 可选 |
-| `ENABLE_FUNDAMENTAL_PIPELINE` | 基本面聚合总开关；关闭时仅返回 `not_supported` 块，不改变原分析链路 | `true` | 可选 |
-| `FUNDAMENTAL_STAGE_TIMEOUT_SECONDS` | 基本面阶段总时延预算（秒） | `1.5` | 可选 |
-| `FUNDAMENTAL_FETCH_TIMEOUT_SECONDS` | 单能力源调用超时（秒） | `0.8` | 可选 |
-| `FUNDAMENTAL_RETRY_MAX` | 基本面能力重试次数（含首次） | `1` | 可选 |
-| `FUNDAMENTAL_CACHE_TTL_SECONDS` | 基本面聚合缓存 TTL（秒），短缓存减轻重复拉取 | `120` | 可选 |
-| `FUNDAMENTAL_CACHE_MAX_ENTRIES` | 基本面缓存最大条目数（TTL 内按时间淘汰） | `256` | 可选 |
+| `TUSHARE_TOKEN` | Tushare Pro Token | - | Tùy chọn |
+| `TICKFLOW_API_KEY` | TickFlow API Key; sau khi cấu hình,复盘 chỉ số A-share sẽ ưu tiên thử TickFlow, nếu gói hỗ trợ tra cứu pool标的 thì thống kê thị trường cũng ưu tiên TickFlow | - | Tùy chọn |
+| `ENABLE_REALTIME_QUOTE` | Bật realtime quote (tắt thì dùng giá đóng cửa lịch sử để phân tích) | `true` | Tùy chọn |
+| `ENABLE_REALTIME_TECHNICAL_INDICATORS` | Chỉ số kỹ thuật realtime trong phiên: bật thì dùng giá realtime tính MA5/MA10/MA20 và sắp xếp đa đầu (Issue #234); tắt thì dùng đóng cửa hôm qua | `true` | Tùy chọn |
+| `ENABLE_CHIP_DISTRIBUTION` | Bật phân tích筹码分布 (interface không ổn định, khuyến nghị tắt khi deploy cloud). Người dùng GitHub Actions cần đặt `ENABLE_CHIP_DISTRIBUTION=true` trong Repository Variables để bật; workflow mặc định tắt. | `true` | Tùy chọn |
+| `ENABLE_EASTMONEY_PATCH` | Patch接口 Đông Phương: khi接口 Đông Phương liên tục thất bại (vd RemoteDisconnected, kết nối bị đóng) khuyến nghị đặt `true`, tiêm token NID và User-Agent ngẫu nhiên để giảm xác suất bị giới hạn | `false` | Tùy chọn |
+| `REALTIME_SOURCE_PRIORITY` | Ưu tiên nguồn dữ liệu realtime quote (cách nhau bởi dấu phẩy), vd `tencent,akshare_sina,efinance,akshare_em` | Xem .env.example | Tùy chọn |
+| `ENABLE_FUNDAMENTAL_PIPELINE` | Tổng开关聚合基本面; tắt thì chỉ trả về khối `not_supported`, không thay đổi chuỗi phân tích gốc | `true` | Tùy chọn |
+| `FUNDAMENTAL_STAGE_TIMEOUT_SECONDS` | Ngân sách độ trễ giai đoạn基本面 (giây) | `1.5` | Tùy chọn |
+| `FUNDAMENTAL_FETCH_TIMEOUT_SECONDS` | Timeout gọi nguồn đơn (giây) | `0.8` | Tùy chọn |
+| `FUNDAMENTAL_RETRY_MAX` | Số lần thử lại nguồn基本面 (bao gồm lần đầu) | `1` | Tùy chọn |
+| `FUNDAMENTAL_CACHE_TTL_SECONDS` | TTL cache聚合基本面 (giây), cache ngắn giảm kéo lặp | `120` | Tùy chọn |
+| `FUNDAMENTAL_CACHE_MAX_ENTRIES` | Số entry tối đa cache基本面 (loại bỏ theo thời gian trong TTL) | `256` | Tùy chọn |
 
-> 行为说明：
-> - A 股：按 `valuation/growth/earnings/institution/capital_flow/dragon_tiger/boards` 聚合能力返回；
-> - ETF：返回可得项，缺失能力标记为 `not_supported`，整体不影响原流程；
-> - 美股/港股：返回 `not_supported` 兜底块；
-> - 任何异常走 fail-open，仅记录错误，不影响技术面/新闻/筹码主链路。
-> - 配置 `TICKFLOW_API_KEY` 后，仅 A 股大盘复盘会额外优先尝试 TickFlow 的主要指数行情；若当前套餐支持标的池查询，市场涨跌统计也会优先尝试 TickFlow。个股链路和实时行情优先级不变。
-> - TickFlow 能力按套餐权限分层：有限权限套餐仍可使用主指数查询；支持 `CN_Equity_A` 标的池查询的套餐才会启用 TickFlow 市场统计。
-> - 官方 quickstart 已文档化 `quotes.get(universes=["CN_Equity_A"])`，但线上 smoke test 进一步确认：`TICKFLOW_API_KEY` 不等于一定具备该权限，且 `quotes.get(symbols=[...])` 单次存在标的数量限制。
-> - TickFlow 实际返回的 `change_pct` / `amplitude` 为比例值；系统已在接入层统一转换为百分比值，确保与现有数据源字段语义一致。
-> - 字段契约：
->   - `fundamental_context.belong_boards` = 个股关联板块列表（当前仅 A 股写入；无数据时为 `[]`）；
->   - `fundamental_context.boards.data` = `sector_rankings`（板块涨跌榜，结构 `{top, bottom}`）；
->   - `fundamental_context.earnings.data.financial_report` = 财报摘要（报告期、营收、归母净利润、经营现金流、ROE）；
->   - `fundamental_context.earnings.data.dividend` = 分红指标（仅现金分红税前口径，含 `events`、`ttm_cash_dividend_per_share`、`ttm_dividend_yield_pct`）；
->   - `get_stock_info.belong_boards` = 个股所属板块列表；
->   - `get_stock_info.boards` 为兼容别名，值与 `belong_boards` 相同（未来仅在大版本考虑移除）；
->   - `get_stock_info.sector_rankings` 与 `fundamental_context.boards.data` 保持一致。
->   - `AnalysisReport.details.belong_boards` = 结构化报告详情中的关联板块列表；
->   - `AnalysisReport.details.sector_rankings` = 结构化报告详情中的板块涨跌榜（用于前端板块联动展示）。
-> - 板块涨跌榜使用数据源顺序：与全局 priority 一致。
-> - 超时控制为 `best-effort` 软超时：阶段会按预算快速降级继续执行，但不保证硬中断底层三方调用。
-> - `FUNDAMENTAL_STAGE_TIMEOUT_SECONDS=1.5` 表示新增基本面阶段的目标预算，不是严格硬 SLA。
-> - 若要硬 SLA，请在后续版本升级为子进程隔离执行并在超时后强制终止。
+> Giải thích hành vi:
+> - A-share:聚合 trả về theo `valuation/growth/earnings/institution/capital_flow/dragon_tiger/boards`;
+> - ETF: trả về mục có được, năng lực thiếu đánh dấu `not_supported`, tổng thể không ảnh hưởng quy trình gốc;
+> -美股/港股: trả về khối dự phòng `not_supported`;
+> - Bất kỳ ngoại lệ nào đều fail-open, chỉ ghi lỗi, không ảnh hưởng chuỗi chính kỹ thuật/tin tức/chấm.
+> - Sau khi cấu hình `TICKFLOW_API_KEY`, chỉ复盘 chỉ số A-share sẽ ưu tiên thử TickFlow cho chỉ số chính; nếu gói hiện tại hỗ trợ tra cứu pool标的 thì thống kê thị trường cũng ưu tiên TickFlow. Chuỗi个股 và realtime quote không thay đổi ưu tiên.
+> - Năng lực TickFlow phân lớp theo quyền gói: gói quyền hạn chế vẫn có thể dùng tra cứu chỉ số chính; gói hỗ trợ pool标的 `CN_Equity_A` mới bật thống kê thị trường TickFlow.
+> - Quickstart chính thức đã document hóa `quotes.get(universes=["CN_Equity_A"])`, nhưng smoke test online xác nhận thêm: `TICKFLOW_API_KEY` không đồng nghĩa có quyền này, và `quotes.get(symbols=[...])` có giới hạn số标的 mỗi lần.
+> - TickFlow thực tế trả về `change_pct` / `amplitude` là tỷ lệ; hệ thống đã chuyển đổi thống nhất thành giá trị phần trăm tại lớp接入, đảm bảo nhất quán ngữ nghĩa trường với nguồn dữ liệu hiện có.
+> - Hợp đồng trường:
+>   - `fundamental_context.belong_boards` = danh sách板块 liên quan个股 (hiện chỉ A-share; không có dữ liệu thì `[]`);
+>   - `fundamental_context.boards.data` = `sector_rankings` (bảng xếp hạng板块, cấu trúc `{top, bottom}`);
+>   - `fundamental_context.earnings.data.financial_report` = tóm tắt báo cáo tài chính (kỳ báo cáo, doanh thu, lợi nhuận ròng, dòng tiền hoạt động, ROE);
+>   - `fundamental_context.earnings.data.dividend` = chỉ số chia cổ tức (chỉ口径 cổ tức tiền mặt trước thuế, gồm `events`, `ttm_cash_dividend_per_share`, `ttm_dividend_yield_pct`);
+>   - `get_stock_info.belong_boards` = danh sách板块 thuộc个股;
+>   - `get_stock_info.boards` là alias tương thích, giá trị giống `belong_boards` (tương lai chỉ xem xét xóa ở major version);
+>   - `get_stock_info.sector_rankings` nhất quán với `fundamental_context.boards.data`.
+>   - `AnalysisReport.details.belong_boards` = danh sách板块 liên quan trong chi tiết báo cáo có cấu trúc;
+>   - `AnalysisReport.details.sector_rankings` = bảng xếp hạng板块 trong chi tiết báo cáo có cấu trúc (dùng cho联动板块 frontend).
+> - Thứ tự nguồn dữ liệu bảng xếp hạng板块: nhất quán với priority toàn cục.
+> - Kiểm soát timeout là soft-timeout `best-effort`: giai đoạn sẽ downgrade nhanh theo ngân sách, nhưng không đảm bảo hard-interrupt gọi bên thứ ba.
+> - `FUNDAMENTAL_STAGE_TIMEOUT_SECONDS=1.5` là ngân sách mục tiêu cho giai đoạn基本面 mới, không phải SLA cứng nghiêm ngặt.
+> - Nếu cần SLA cứng, vui lòng nâng cấp lên thực thi cách ly tiến trình con và buộc终止 khi timeout ở phiên bản sau.
 
-### 其他配置
+### Cấu Hình Khác
 
-| 变量名 | 说明 | 默认值 |
+| Tên biến | Mô tả | Giá trị mặc định |
 |--------|------|--------|
-| `STOCK_LIST` | 自选股代码（逗号分隔） | - |
-| `ADMIN_AUTH_ENABLED` | Web 登录：设为 `true` 启用密码保护；首次访问在网页设置初始密码，可在「系统设置 > 修改密码」修改；忘记密码执行 `python -m src.auth reset_password` | `false` |
-| `TRUST_X_FORWARDED_FOR` | 单层可信反向代理部署时设为 `true`，取 `X-Forwarded-For` 最右值作为真实客户端 IP（用于登录限流等）；直连公网时保持 `false` 防伪造。多级代理/CDN 场景下限流 key 可能退化为边缘代理 IP，需额外评估 | `false` |
-| `MAX_WORKERS` | 并发线程数 | `3` |
-| `MARKET_REVIEW_ENABLED` | 启用大盘复盘 | `true` |
-| `MARKET_REVIEW_REGION` | 大盘复盘市场区域：cn(A股)、us(美股)、both(两者)，us 适合仅关注美股的用户 | `cn` |
-| `TRADING_DAY_CHECK_ENABLED` | 交易日检查：默认 `true`，非交易日跳过执行；设为 `false` 或使用 `--force-run` 可强制执行（Issue #373） | `true` |
-| `SCHEDULE_ENABLED` | 启用定时任务 | `false` |
-| `SCHEDULE_TIME` | 定时执行时间 | `18:00` |
-| `LOG_DIR` | 日志目录 | `./logs` |
+| `STOCK_LIST` | Mã cổ phiếu tự chọn (cách nhau bởi dấu phẩy) | - |
+| `ADMIN_AUTH_ENABLED` | Đăng nhập Web: đặt `true` để bật bảo vệ mật khẩu; lần đầu truy cập đặt mật khẩu ban đầu trên trang web, có thể đổi tại 「System Settings > Change Password」; quên mật khẩu chạy `python -m src.auth reset_password` | `false` |
+| `TRUST_X_FORWARDED_FOR` | Đặt `true` khi deploy sau reverse proxy đáng tin 1 lớp, lấy giá trị ngoài cùng bên phải của `X-Forwarded-For` làm IP client thực (dùng cho rate limit đăng nhập...); giữ `false` khi kết nối trực tiếp internet để chống giả mạo. Với multi-proxy/CDN, key rate limit có thể退 hóa thành IP edge proxy, cần đánh giá thêm | `false` |
+| `MAX_WORKERS` | Số luồng并发 | `3` |
+| `MARKET_REVIEW_ENABLED` | Bật复盘大盘 | `true` |
+| `MARKET_REVIEW_REGION` | Thị trường复盘: cn(A-share), us(美股), both(cả hai), us phù hợp người dùng chỉ quan tâm美股 | `cn` |
+| `TRADING_DAY_CHECK_ENABLED` | Kiểm tra ngày giao dịch: mặc định `true`, bỏ qua nếu không phải ngày giao dịch; đặt `false` hoặc dùng `--force-run` để bắt buộc thực thi (Issue #373) | `true` |
+| `SCHEDULE_ENABLED` | Bật tác vụ định kỳ | `false` |
+| `SCHEDULE_TIME` | Giờ thực thi định kỳ | `18:00` |
+| `LOG_DIR` | Thư mục log | `./logs` |
 
 ---
 
-## Docker 部署
+## Triển Khai Docker
 
-Dockerfile 使用多阶段构建，前端会在构建镜像时自动打包并内置到 `static/`。
-如需覆盖静态资源，可挂载本地 `static/` 到容器内 `/app/static`。
-运行中的 `server` 容器默认直接复用 `/app/static` 里的预构建产物，不要求容器内保留 `apps/dsa-web` 源码目录或运行时安装 `npm`；若 WebUI 无法打开，请优先确认 `/app/static/index.html` 是否存在。
+Dockerfile sử dụng multi-stage build, frontend sẽ tự động đóng gói khi build image và tích hợp sẵn vào `static/`.
+Nếu muốn ghi đè static resource, có thể mount `static/` cục bộ vào `/app/static` trong container.
+Container `server` đang chạy mặc định tái sử dụng artifact pre-build trong `/app/static`, không yêu cầu giữ thư mục nguồn `apps/dsa-web` hoặc cài `npm` runtime trong container; nếu WebUI không mở được, vui lòng ưu tiên xác nhận `/app/static/index.html` có tồn tại.
 
-### 快速启动
+### Khởi Động Nhanh
 
 ```bash
-# 1. 克隆仓库
+# 1. Clone kho
 git clone https://github.com/ZhuLinsen/daily_stock_analysis.git
 cd daily_stock_analysis
 
-# 2. 配置环境变量
+# 2. Cấu hình biến môi trường
 cp .env.example .env
-vim .env  # 填入 API Key 和配置
+vim .env  # Điền API Key và cấu hình
 
-# 3. 启动容器
-docker-compose -f ./docker/docker-compose.yml up -d server     # Web 服务模式（推荐，提供 API 与 WebUI）
-docker-compose -f ./docker/docker-compose.yml up -d analyzer   # 定时任务模式
-docker-compose -f ./docker/docker-compose.yml up -d            # 同时启动两种模式
+# 3. Khởi động container
+docker-compose -f ./docker/docker-compose.yml up -d server     # Chế độ Web service (khuyến nghị, cung cấp API và WebUI)
+docker-compose -f ./docker/docker-compose.yml up -d analyzer   # Chế độ tác vụ định kỳ
+docker-compose -f ./docker/docker-compose.yml up -d            # Khởi động cả hai chế độ
 
-# 4. 访问 WebUI
+# 4. Truy cập WebUI
 # http://localhost:8000
 
-# 5. 查看日志
+# 5. Xem log
 docker-compose -f ./docker/docker-compose.yml logs -f server
 ```
 
-### 运行模式说明
+### Giải Thích Chế Độ Chạy
 
-| 命令 | 说明 | 端口 |
+| Lệnh | Mô tả | Cổng |
 |------|------|------|
-| `docker-compose -f ./docker/docker-compose.yml up -d server` | Web 服务模式，提供 API 与 WebUI | 8000 |
-| `docker-compose -f ./docker/docker-compose.yml up -d analyzer` | 定时任务模式，每日自动执行 | - |
-| `docker-compose -f ./docker/docker-compose.yml up -d` | 同时启动两种模式 | 8000 |
+| `docker-compose -f ./docker/docker-compose.yml up -d server` | Chế độ Web service, cung cấp API và WebUI | 8000 |
+| `docker-compose -f ./docker/docker-compose.yml up -d analyzer` | Chế độ tác vụ định kỳ, tự động thực thi hàng ngày | - |
+| `docker-compose -f ./docker/docker-compose.yml up -d` | Khởi động cả hai chế độ | 8000 |
 
-### Docker Compose 配置
+### Cấu Hình Docker Compose
 
-`docker-compose.yml` 使用 YAML 锚点复用配置：
+`docker-compose.yml` sử dụng anchor YAML để tái sử dụng cấu hình:
 
 ```yaml
 version: '3.8'
@@ -362,12 +362,12 @@ x-common: &common
     - ../.env:/app/.env
 
 services:
-  # 定时任务模式
+  # Chế độ tác vụ định kỳ
   analyzer:
     <<: *common
     container_name: stock-analyzer
 
-  # FastAPI 模式
+  # Chế độ FastAPI
   server:
     <<: *common
     container_name: stock-server
@@ -376,24 +376,24 @@ services:
       - "8000:8000"
 ```
 
-### 常用命令
+### Lệnh Thường Dùng
 
 ```bash
-# 查看运行状态
+# Xem trạng thái chạy
 docker-compose -f ./docker/docker-compose.yml ps
 
-# 查看日志
+# Xem log
 docker-compose -f ./docker/docker-compose.yml logs -f server
 
-# 停止服务
+# Dừng dịch vụ
 docker-compose -f ./docker/docker-compose.yml down
 
-# 重建镜像（代码更新后）
+# Build lại image (sau khi cập nhật code)
 docker-compose -f ./docker/docker-compose.yml build --no-cache
 docker-compose -f ./docker/docker-compose.yml up -d server
 ```
 
-### 手动构建镜像
+### Build Image Thủ Công
 
 ```bash
 docker build -f docker/Dockerfile -t stock-analysis .
@@ -402,54 +402,54 @@ docker run -d --env-file .env -p 8000:8000 -v ./data:/app/data stock-analysis py
 
 ---
 
-## 本地运行详细配置
+## Cấu Hình Chạy Cục Bộ Chi Tiết
 
-### 安装依赖
+### Cài Đặt Dependency
 
 ```bash
-# Python 3.10+ 推荐
+# Khuyến nghị Python 3.10+
 pip install -r requirements.txt
 
-# 或使用 conda
+# Hoặc dùng conda
 conda create -n stock python=3.10
 conda activate stock
 pip install -r requirements.txt
 ```
 
-**智能导入依赖**：`pypinyin`（名称→代码拼音匹配）和 `openpyxl`（Excel .xlsx 解析）已包含在 `requirements.txt` 中，执行上述 `pip install -r requirements.txt` 时会自动安装。若使用智能导入（图片/CSV/Excel/剪贴板）功能，请确保依赖已正确安装；缺失时可能报 `ModuleNotFoundError`。
+**Import thông minh**: `pypinyin` (ghép tên→mã bằng pinyin) và `openpyxl` (phân tích Excel .xlsx) đã bao gồm trong `requirements.txt`, sẽ tự động cài khi chạy `pip install -r requirements.txt`. Nếu dùng chức năng import thông minh (ảnh/CSV/Excel/clipboard), vui lòng đảm bảo dependency đã cài đúng; khi thiếu có thể báo `ModuleNotFoundError`.
 
-### 命令行参数
+### Tham Số Dòng Lệnh
 
 ```bash
-python main.py                        # 完整分析（个股 + 大盘复盘）
-python main.py --market-review        # 仅大盘复盘
-python main.py --no-market-review     # 仅个股分析
-python main.py --stocks 600519,300750 # 指定股票
-python main.py --dry-run              # 仅获取数据，不 AI 分析
-python main.py --no-notify            # 不发送推送
-python main.py --schedule             # 定时任务模式
-python main.py --force-run            # 非交易日也强制执行（Issue #373）
-python main.py --debug                # 调试模式（详细日志）
-python main.py --workers 5            # 指定并发数
+python main.py                        # Phân tích đầy đủ (个股 +复盘大盘)
+python main.py --market-review        # Chỉ复盘大盘
+python main.py --no-market-review     # Chỉ phân tích个股
+python main.py --stocks 600519,300750 # Chỉ định cổ phiếu
+python main.py --dry-run              # Chỉ lấy dữ liệu, không AI phân tích
+python main.py --no-notify            # Không gửi thông báo
+python main.py --schedule             # Chế độ định kỳ
+python main.py --force-run            # Bắt buộc thực thi cả ngày không giao dịch (Issue #373)
+python main.py --debug                # Chế độ debug (log chi tiết)
+python main.py --workers 5            # Chỉ định số并发
 ```
 
 ---
 
-## 定时任务配置
+## Cấu Hình Tác Vụ Định Kỳ
 
-### GitHub Actions 定时
+### GitHub Actions Định Kỳ
 
-编辑 `.github/workflows/daily_analysis.yml`:
+Sửa `.github/workflows/daily_analysis.yml`:
 
 ```yaml
 schedule:
-  # UTC 时间，北京时间 = UTC + 8
-  - cron: '0 10 * * 1-5'   # 周一到周五 18:00（北京时间）
+  # Giờ UTC, giờ Bắc Kinh = UTC + 8
+  - cron: '0 10 * * 1-5'   # Thứ 2 đến thứ 6 18:00 (giờ Bắc Kinh)
 ```
 
-常用时间对照：
+Bảng tham chiếu thời gian thường dùng:
 
-| 北京时间 | UTC cron 表达式 |
+| Giờ Bắc Kinh | UTC cron expression |
 |---------|----------------|
 | 09:30 | `'30 1 * * 1-5'` |
 | 12:00 | `'0 4 * * 1-5'` |
@@ -457,117 +457,117 @@ schedule:
 | 18:00 | `'0 10 * * 1-5'` |
 | 21:00 | `'0 13 * * 1-5'` |
 
-#### GitHub Actions 非交易日手动运行（Issue #461 / #466）
+#### GitHub Actions Chạy Thủ Công Ngày Không Giao Dịch (Issue #461 / #466)
 
-`daily_analysis.yml` 支持两种控制方式：
+`daily_analysis.yml` hỗ trợ hai cách điều khiển:
 
-- `TRADING_DAY_CHECK_ENABLED`：仓库级配置（`Settings → Secrets and variables → Actions`），默认 `true`
-- `workflow_dispatch.force_run`：手动触发时的单次开关，默认 `false`
+- `TRADING_DAY_CHECK_ENABLED`: Cấu hình cấp kho (`Settings → Secrets and variables → Actions`), mặc định `true`
+- `workflow_dispatch.force_run`: Công tắc một lần khi trigger thủ công, mặc định `false`
 
-推荐优先级理解：
+Hiểu ưu tiên khuyến nghị:
 
-| 配置组合 | 非交易日行为 |
+| Tổ hợp cấu hình | Hành vi ngày không giao dịch |
 |---------|-------------|
-| `TRADING_DAY_CHECK_ENABLED=true` + `force_run=false` | 跳过执行（默认行为） |
-| `TRADING_DAY_CHECK_ENABLED=true` + `force_run=true` | 本次强制执行 |
-| `TRADING_DAY_CHECK_ENABLED=false` + `force_run=false` | 始终执行（定时和手动都不检查交易日） |
-| `TRADING_DAY_CHECK_ENABLED=false` + `force_run=true` | 始终执行 |
+| `TRADING_DAY_CHECK_ENABLED=true` + `force_run=false` | Bỏ qua (hành vi mặc định) |
+| `TRADING_DAY_CHECK_ENABLED=true` + `force_run=true` | Bắt buộc thực thi lần này |
+| `TRADING_DAY_CHECK_ENABLED=false` + `force_run=false` | Luôn thực thi (định kỳ và thủ công đều không kiểm tra ngày giao dịch) |
+| `TRADING_DAY_CHECK_ENABLED=false` + `force_run=true` | Luôn thực thi |
 
-手动触发步骤：
+Các bước trigger thủ công:
 
-1. 打开 `Actions → 每日股票分析 → Run workflow`
-2. 选择 `mode`（`full` / `market-only` / `stocks-only`）
-3. 若当天是非交易日且希望仍执行，将 `force_run` 设为 `true`
-4. 点击 `Run workflow`
+1. Mở `Actions → 每日股票分析 → Run workflow`
+2. Chọn `mode` (`full` / `market-only` / `stocks-only`)
+3. Nếu hôm nay là ngày không giao dịch và vẫn muốn thực thi, đặt `force_run` thành `true`
+4. Nhấn `Run workflow`
 
-### 本地定时任务
+### Tác Vụ Định Kỳ Cục Bộ
 
-内建的定时任务调度器支持每天在指定时间（默认 18:00）运行分析。
+Trình lập lịch định kỳ tích hợp hỗ trợ chạy phân tích vào giờ chỉ định mỗi ngày (mặc định 18:00).
 
-#### 命令行方式
+#### Cách Dòng Lệnh
 
 ```bash
-# 启动定时模式（启动时立即执行一次，随后每天 18:00 执行）
+# Khởi động chế độ định kỳ (thực thi ngay 1 lần khi khởi động, sau đó 18:00 hàng ngày)
 python main.py --schedule
 
-# 启动定时模式（启动时不执行，仅等待下次定时触发）
+# Khởi động chế độ định kỳ (không thực thi khi khởi động, chỉ chờ trigger định kỳ)
 python main.py --schedule --no-run-immediately
 ```
 
-> 说明：定时模式每次触发前都会重新读取当前保存的 `STOCK_LIST`。如果同时传入 `--stocks`，该参数不会锁定后续计划执行的股票列表；需要临时只跑指定股票时，请使用非定时的单次运行命令。
+> Lưu ý: Mỗi lần trigger định kỳ đều đọc lại `STOCK_LIST` hiện tại đã lưu. Nếu truyền `--stocks` đồng thời, tham số này sẽ không khóa danh sách cổ phiếu cho các lần chạy theo lịch; nếu cần tạm thời chỉ chạy cổ phiếu chỉ định, vui lòng dùng lệnh chạy một lần không định kỳ.
 
-#### 环境变量方式
+#### Cách Biến Môi Trường
 
-你也可以通过环境变量配置定时行为（适用于 Docker 或 .env）：
+Bạn cũng có thể cấu hình hành vi định kỳ qua biến môi trường (phù hợp Docker hoặc .env):
 
-| 变量名 | 说明 | 默认值 | 示例 |
+| Tên biến | Mô tả | Mặc định | Ví dụ |
 |--------|------|:-------:|:-----:|
-| `SCHEDULE_ENABLED` | 是否启用定时任务 | `false` | `true` |
-| `SCHEDULE_TIME` | 每日执行时间 (HH:MM) | `18:00` | `09:30` |
-| `SCHEDULE_RUN_IMMEDIATELY` | 启动服务时是否立即运行一次 | `true` | `false` |
-| `TRADING_DAY_CHECK_ENABLED` | 交易日检查：非交易日跳过执行；设为 `false` 可强制执行 | `true` | `false` |
+| `SCHEDULE_ENABLED` | Có bật tác vụ định kỳ không | `false` | `true` |
+| `SCHEDULE_TIME` | Giờ thực thi hàng ngày (HH:MM) | `18:00` | `09:30` |
+| `SCHEDULE_RUN_IMMEDIATELY` | Có thực thi ngay khi khởi động dịch vụ không | `true` | `false` |
+| `TRADING_DAY_CHECK_ENABLED` | Kiểm tra ngày giao dịch: bỏ qua nếu không phải ngày giao dịch; đặt `false` để bắt buộc | `true` | `false` |
 
-例如在 Docker 中配置：
+Ví dụ cấu hình trong Docker:
 
 ```bash
-# 设置启动时不立即分析
+# Đặt không phân tích ngay khi khởi động
 docker run -e SCHEDULE_ENABLED=true -e SCHEDULE_RUN_IMMEDIATELY=false ...
 ```
 
-#### 交易日判断（Issue #373）
+#### Phán Đoán Ngày Giao Dịch (Issue #373)
 
-默认根据自选股市场（A 股 / 港股 / 美股）和 `MARKET_REVIEW_REGION` 判断是否为交易日：
-- 使用 `exchange-calendars` 区分 A 股 / 港股 / 美股各自的交易日历（含节假日）
-- 混合持仓时，每只股票只在其市场开市日分析，休市股票当日跳过
-- 全部相关市场均为非交易日时，整体跳过执行（不启动 pipeline、不发推送）
-- 覆盖方式：`TRADING_DAY_CHECK_ENABLED=false` 或 命令行 `--force-run`
+Mặc định phán đoán dựa trên thị trường cổ phiếu tự chọn (A-share / HK /美股) và `MARKET_REVIEW_REGION`:
+- Sử dụng `exchange-calendars` để phân biệt lịch giao dịch riêng của A-share / HK /美股 (bao gồm ngày lễ)
+- Với danh mục hỗn hợp, mỗi cổ phiếu chỉ phân tích vào ngày thị trường của nó mở cửa, cổ phiếu nghỉ thì bỏ qua hôm đó
+- Khi tất cả thị trường liên quan đều là ngày không giao dịch, tổng thể bỏ qua (không khởi động pipeline, không đẩy tin)
+- Ghi đè: `TRADING_DAY_CHECK_ENABLED=false` hoặc dòng lệnh `--force-run`
 
-#### 使用 Crontab
+#### Dùng Crontab
 
-如果不想使用常驻进程，也可以使用系统的 Cron：
+Nếu không muốn dùng process常驻, có thể dùng Cron của hệ thống:
 
 ```bash
 crontab -e
-# 添加：0 18 * * 1-5 cd /path/to/project && python main.py
+# Thêm: 0 18 * * 1-5 cd /path/to/project && python main.py
 ```
 
 ---
 
-## 通知渠道详细配置
+## Cấu Hình Chi Tiết Kênh Thông Báo
 
-### 企业微信
+### WeChat Work
 
-1. 在企业微信群聊中添加"群机器人"
-2. 复制 Webhook URL
-3. 设置 `WECHAT_WEBHOOK_URL`
+1. Thêm "group robot" trong nhóm chat WeChat Work
+2. Sao chép Webhook URL
+3. Đặt `WECHAT_WEBHOOK_URL`
 
-### 飞书
+### Feishu
 
-1. 在飞书群聊中添加"自定义机器人"
-2. 复制 Webhook URL
-3. 设置 `FEISHU_WEBHOOK_URL`
+1. Thêm "custom robot" trong nhóm chat Feishu
+2. Sao chép Webhook URL
+3. Đặt `FEISHU_WEBHOOK_URL`
 
 ### Telegram
 
-1. 与 @BotFather 对话创建 Bot
-2. 获取 Bot Token
-3. 获取 Chat ID（可通过 @userinfobot）
-4. 设置 `TELEGRAM_BOT_TOKEN` 和 `TELEGRAM_CHAT_ID`
-5. (可选) 如需发送到 Topic，设置 `TELEGRAM_MESSAGE_THREAD_ID` (从 Topic 链接末尾获取)
+1. Nói chuyện với @BotFather để tạo Bot
+2. Lấy Bot Token
+3. Lấy Chat ID (có thể qua @userinfobot)
+4. Đặt `TELEGRAM_BOT_TOKEN` và `TELEGRAM_CHAT_ID`
+5. (Tùy chọn) Nếu cần gửi vào Topic, đặt `TELEGRAM_MESSAGE_THREAD_ID` (lấy từ cuối link Topic)
 
-### 邮件
+### Email
 
-1. 开启邮箱的 SMTP 服务
-2. 获取授权码（非登录密码）
-3. 设置 `EMAIL_SENDER`、`EMAIL_PASSWORD`、`EMAIL_RECEIVERS`
+1. Bật dịch vụ SMTP của email
+2. Lấy mã ủy quyền (không phải mật khẩu đăng nhập)
+3. Đặt `EMAIL_SENDER`, `EMAIL_PASSWORD`, `EMAIL_RECEIVERS`
 
-支持的邮箱：
-- QQ 邮箱：smtp.qq.com:465
-- 163 邮箱：smtp.163.com:465
-- Gmail：smtp.gmail.com:587
+Email hỗ trợ:
+- QQ Mail: smtp.qq.com:465
+- 163 Mail: smtp.163.com:465
+- Gmail: smtp.gmail.com:587
 
-**股票分组发往不同邮箱**（Issue #268，可选）：
-配置 `STOCK_GROUP_N` 与 `EMAIL_GROUP_N` 可实现不同股票组的报告发送到不同邮箱，例如多人共享分析时互不干扰。大盘复盘会发往所有配置的邮箱。
+**Gửi cổ phiếu nhóm đến email khác nhau** (Issue #268, tùy chọn):
+Cấu hình `STOCK_GROUP_N` và `EMAIL_GROUP_N` để gửi báo cáo nhóm cổ phiếu khác nhau đến email khác nhau, ví dụ nhiều người chia sẻ phân tích không ảnh hưởng lẫn nhau.复盘大盘 sẽ gửi đến tất cả email đã cấu hình.
 
 ```bash
 STOCK_GROUP_1=600519,300750
@@ -576,38 +576,38 @@ STOCK_GROUP_2=002594,AAPL
 EMAIL_GROUP_2=user2@example.com
 ```
 
-### 自定义 Webhook
+### Custom Webhook
 
-支持任意 POST JSON 的 Webhook，包括：
-- 钉钉机器人
+Hỗ trợ bất kỳ Webhook POST JSON nào, bao gồm:
+- Robot DingTalk
 - Discord Webhook
 - Slack Webhook
-- Bark（iOS 推送）
-- 自建服务
+- Bark (iOS push)
+- Dịch vụ tự dựng
 
-设置 `CUSTOM_WEBHOOK_URLS`，多个用逗号分隔。
+Đặt `CUSTOM_WEBHOOK_URLS`, nhiều cái cách nhau bởi dấu phẩy.
 
 ### Discord
 
-Discord 支持两种方式推送：
+Discord hỗ trợ hai cách đẩy tin:
 
-**方式一：Webhook（推荐，简单）**
+**Cách 1: Webhook (khuyến nghị, đơn giản)**
 
-1. 在 Discord 频道设置中创建 Webhook
-2. 复制 Webhook URL
-3. 配置环境变量：
+1. Tạo Webhook trong cài đặt kênh Discord
+2. Sao chép Webhook URL
+3. Cấu hình biến môi trường:
 
 ```bash
 DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/xxx/yyy
 ```
 
-**方式二：Bot API（需要更多权限）**
+**Cách 2: Bot API (cần nhiều quyền hơn)**
 
-1. 在 [Discord Developer Portal](https://discord.com/developers/applications) 创建应用
-2. 创建 Bot 并获取 Token
-3. 邀请 Bot 到服务器
-4. 获取频道 ID（开发者模式下右键频道复制）
-5. 配置环境变量：
+1. Tạo ứng dụng tại [Discord Developer Portal](https://discord.com/developers/applications)
+2. Tạo Bot và lấy Token
+3. Mời Bot vào server
+4. Lấy Channel ID (chế độ developer, phải chuột kênh sao chép)
+5. Cấu hình biến môi trường:
 
 ```bash
 DISCORD_BOT_TOKEN=your_bot_token
@@ -616,483 +616,483 @@ DISCORD_MAIN_CHANNEL_ID=your_channel_id
 
 ### Slack
 
-Slack 支持两种方式推送，同时配置时优先使用 Bot API，确保文本与图片发送到同一频道：
+Slack hỗ trợ hai cách đẩy tin, khi cấu hình cả hai ưu tiên dùng Bot API, đảm bảo text và ảnh gửi đến cùng kênh:
 
-**方式一：Bot API（推荐，支持图片上传）**
+**Cách 1: Bot API (khuyến nghị, hỗ trợ upload ảnh)**
 
-1. 创建 Slack App：https://api.slack.com/apps → Create New App
-2. 添加 Bot Token Scopes：`chat:write`、`files:write`
-3. 安装到工作区并获取 Bot Token (xoxb-...)
-4. 获取频道 ID：频道详情 → 底部复制频道 ID
-5. 配置环境变量：
+1. Tạo Slack App: https://api.slack.com/apps → Create New App
+2. Thêm Bot Token Scopes: `chat:write`, `files:write`
+3. Cài vào workspace và lấy Bot Token (xoxb-...)
+4. Lấy Channel ID: Chi tiết kênh → sao chép Channel ID ở dưới
+5. Cấu hình biến môi trường:
 
 ```bash
 SLACK_BOT_TOKEN=xoxb-...
 SLACK_CHANNEL_ID=C01234567
 ```
 
-**方式二：Incoming Webhook（配置简单，仅文本）**
+**Cách 2: Incoming Webhook (cấu hình đơn giản, chỉ text)**
 
-1. 在 Slack App 管理页面创建 Incoming Webhook
-2. 复制 Webhook URL
-3. 配置环境变量：
+1. Tạo Incoming Webhook trong trang quản lý Slack App
+2. Sao chép Webhook URL
+3. Cấu hình biến môi trường:
 
 ```bash
 SLACK_WEBHOOK_URL=https://hooks.slack.com/services/T.../B.../xxx
 ```
 
-### Pushover（iOS/Android 推送）
+### Pushover (iOS/Android Push)
 
-[Pushover](https://pushover.net/) 是一个跨平台的推送服务，支持 iOS 和 Android。
+[Pushover](https://pushover.net/) là dịch vụ push cross-platform, hỗ trợ iOS và Android.
 
-1. 注册 Pushover 账号并下载 App
-2. 在 [Pushover Dashboard](https://pushover.net/) 获取 User Key
-3. 创建 Application 获取 API Token
-4. 配置环境变量：
+1. Đăng ký tài khoản Pushover và tải App
+2. Lấy User Key từ [Pushover Dashboard](https://pushover.net/)
+3. Tạo Application và lấy API Token
+4. Cấu hình biến môi trường:
 
 ```bash
 PUSHOVER_USER_KEY=your_user_key
 PUSHOVER_API_TOKEN=your_api_token
 ```
 
-特点：
-- 支持 iOS/Android 双平台
-- 支持通知优先级和声音设置
-- 免费额度足够个人使用（每月 10,000 条）
-- 消息可保留 7 天
+Đặc điểm:
+- Hỗ trợ cả iOS/Android
+- Hỗ trợ ưu tiên thông báo và cài đặt âm thanh
+- Miễn phí đủ cho cá nhân (10,000 tin/tháng)
+- Tin nhắn lưu giữ 7 ngày
 
-### Markdown 转图片（可选）
+### Markdown Chuyển Ảnh (tùy chọn)
 
-配置 `MARKDOWN_TO_IMAGE_CHANNELS` 可将报告以图片形式发送至不支持 Markdown 的渠道（telegram, wechat, custom, email, slack）。
+Cấu hình `MARKDOWN_TO_IMAGE_CHANNELS` để gửi báo cáo dưới dạng ảnh đến kênh không hỗ trợ Markdown (telegram, wechat, custom, email, slack).
 
-**依赖安装**：
+**Cài đặt dependency**:
 
-1. **imgkit**：已包含在 `requirements.txt`，执行 `pip install -r requirements.txt` 时会自动安装
-2. **wkhtmltopdf**（默认引擎）：系统级依赖，需手动安装：
-   - **macOS**：`brew install wkhtmltopdf`
-   - **Debian/Ubuntu**：`apt install wkhtmltopdf`
-3. **markdown-to-file**（可选，emoji 支持更好）：`npm i -g markdown-to-file`，并设置 `MD2IMG_ENGINE=markdown-to-file`
+1. **imgkit**: Đã bao gồm trong `requirements.txt`, tự động cài khi chạy `pip install -r requirements.txt`
+2. **wkhtmltopdf** (engine mặc định): Phụ thuộc hệ thống, cần cài thủ công:
+   - **macOS**: `brew install wkhtmltopdf`
+   - **Debian/Ubuntu**: `apt install wkhtmltopdf`
+3. **markdown-to-file** (tùy chọn, hỗ trợ emoji tốt hơn): `npm i -g markdown-to-file`, và đặt `MD2IMG_ENGINE=markdown-to-file`
 
-未安装或安装失败时，将自动回退为 Markdown 文本发送。
+Nếu chưa cài hoặc cài thất bại, sẽ tự động fallback gửi text Markdown.
 
-**单股推送 + 图片发送**（Issue #455）：
+**Đẩy từng mã + gửi ảnh** (Issue #455):
 
-单股推送模式（`SINGLE_STOCK_NOTIFY=true`）下，若希望 Telegram 等渠道以图片形式推送，需同时配置 `MARKDOWN_TO_IMAGE_CHANNELS=telegram` 并安装转图工具（wkhtmltopdf 或 markdown-to-file）。个股日报汇总同样支持转图，无需额外配置。
+Trong chế độ đẩy từng mã (`SINGLE_STOCK_NOTIFY=true`), nếu muốn kênh như Telegram gửi dưới dạng ảnh, cần cấu hình đồng thời `MARKDOWN_TO_IMAGE_CHANNELS=telegram` và cài công cụ chuyển ảnh (wkhtmltopdf hoặc markdown-to-file). Tóm tắt nhật ký个股 cũng hỗ trợ chuyển ảnh, không cần cấu hình thêm.
 
-**故障排查**：若日志出现「Markdown 转图片失败，将回退为文本发送」，请检查 `MARKDOWN_TO_IMAGE_CHANNELS` 配置及转图工具是否已正确安装（`which wkhtmltoimage` 或 `which m2f`）。
+**Xử lý sự cố**: Nếu log xuất hiện「Markdown chuyển ảnh thất bại, sẽ fallback về text」, vui lòng kiểm tra cấu hình `MARKDOWN_TO_IMAGE_CHANNELS` và công cụ chuyển ảnh đã cài đúng chưa (`which wkhtmltoimage` hoặc `which m2f`).
 
 ---
 
-## 数据源配置
+## Cấu Hình Nguồn Dữ Liệu
 
-系统默认使用 AkShare（免费），也支持其他数据源：
+Hệ thống mặc định dùng AkShare (miễn phí), cũng hỗ trợ các nguồn khác:
 
-### AkShare（默认）
-- 免费，无需配置
-- 数据来源：东方财富爬虫
+### AkShare (mặc định)
+- Miễn phí, không cần cấu hình
+- Nguồn dữ liệu: cào Đông Phương Tài Phú
 
 ### Tushare Pro
-- 需要注册获取 Token
-- 更稳定，数据更全
-- 设置 `TUSHARE_TOKEN`
+- Cần đăng ký để lấy Token
+- Ổn định hơn, dữ liệu đầy đủ hơn
+- Đặt `TUSHARE_TOKEN`
 
 ### Baostock
-- 免费，无需配置
-- 作为备用数据源
+- Miễn phí, không cần cấu hình
+- Làm nguồn dự phòng
 
 ### YFinance
-- 免费，无需配置
-- 支持美股/港股数据
-- 美股历史数据与实时行情均统一使用 YFinance，以避免 akshare 美股复权异常导致的技术指标错误
+- Miễn phí, không cần cấu hình
+- Hỗ trợ美股/港股
+- Dữ liệu lịch sử và realtime美股 đều thống nhất dùng YFinance, tránh技术指标 sai do akshare美股复权 bất thường
 
-### 东财接口频繁失败时的处理
+### Xử Lý Khi接口 Đông Phương Liên Tục Thất Bại
 
-若日志出现 `RemoteDisconnected`、`push2his.eastmoney.com` 连接被关闭等，多为东财限流。建议：
+Nếu log xuất hiện `RemoteDisconnected`, kết nối `push2his.eastmoney.com` bị đóng..., đa số do Đông Phương giới hạn tốc độ. Khuyến nghị:
 
-1. 在 `.env` 中设置 `ENABLE_EASTMONEY_PATCH=true`
-2. 将 `MAX_WORKERS=1` 降低并发
-3. 若已配置 Tushare，可优先使用 Tushare 数据源
+1. Đặt `ENABLE_EASTMONEY_PATCH=true` trong `.env`
+2. Giảm并发 `MAX_WORKERS=1`
+3. Nếu đã cấu hình Tushare, ưu tiên dùng nguồn Tushare
 
 ---
 
-## 高级功能
+## Tính Năng Nâng Cao
 
-### 港股支持
+### Hỗ Trợ HK Stock
 
-使用 `hk` 前缀指定港股代码：
+Dùng prefix `hk` để chỉ định mã HK:
 
 ```bash
 STOCK_LIST=600519,hk00700,hk01810
 ```
 
-### ETF 与指数分析
+### Phân Tích ETF Và Chỉ Số
 
-针对指数跟踪型 ETF 和美股指数（如 VOO、QQQ、SPY、510050、SPX、DJI、IXIC），分析仅关注**指数走势、跟踪误差、市场流动性**，不纳入基金管理人/发行方的公司层面风险（诉讼、声誉、高管变动等）。风险警报与业绩预期均基于指数成分股整体表现，避免将基金公司新闻误判为标的本身利空。详见 Issue #274。
+Đối với ETF theo dõi chỉ số và美股指数 (như VOO, QQQ, SPY, 510050, SPX, DJI, IXIC), phân tích chỉ tập trung vào**xu hướng chỉ số, sai số theo dõi, thanh khoản thị trường**, không đưa vào rủi ro cấp công ty của nhà quản lý/phát hành quỹ (kiện tụng, danh tiếng, thay đổi lãnh đạo...). Cảnh báo rủi ro và dự kiến hiệu suất đều dựa trên biểu hiện tổng thể của cổ phiếu thành phần chỉ số, tránh nhầm lẫn tin tức quỹ thành利空 của标的. Xem Issue #274.
 
-### 多模型切换
+### Chuyển Đổi Đa Mô Hình
 
-配置多个模型，系统自动切换：
+Cấu hình nhiều mô hình, hệ thống tự động chuyển đổi:
 
 ```bash
-# Gemini（主力）
+# Gemini (chính)
 GEMINI_API_KEY=xxx
 GEMINI_MODEL=gemini-3-flash-preview
 
-# OpenAI 兼容（备选）
+# OpenAI compatible (dự phòng)
 OPENAI_API_KEY=xxx
 OPENAI_BASE_URL=https://api.deepseek.com/v1
 OPENAI_MODEL=deepseek-chat
-# 思考模式：deepseek-reasoner、deepseek-r1、qwq 等自动识别；deepseek-chat 系统按模型名自动启用
+# Chế độ suy luận: deepseek-reasoner, deepseek-r1, qwq... tự động nhận diện; deepseek-chat hệ thống tự kích hoạt theo tên mô hình
 ```
 
-### LiteLLM 直接集成（多模型 + 多 Key 负载均衡）
+### Tích Hợp Trực Tiếp LiteLLM (đa mô hình + cân bằng tải đa Key)
 
-详见 [LLM 配置指南](LLM_CONFIG_GUIDE.md)。本项目通过 [LiteLLM](https://github.com/BerriAI/litellm) 统一调用所有 LLM，无需单独启动 Proxy 服务。
+Xem chi tiết tại [Hướng Dẫn Cấu Hình LLM](LLM_CONFIG_GUIDE.md). Dự án này thống nhất gọi tất cả LLM qua [LiteLLM](https://github.com/BerriAI/litellm), không cần khởi động riêng Proxy service.
 
-**两层机制**：同一模型多 Key 轮换（Router）与跨模型降级（Fallback）分层独立，互不干扰。
+**Cơ chế 2 lớp**: Luân phiên nhiều Key cho cùng mô hình (Router) và降级跨模型 (Fallback) tách biệt độc lập, không ảnh hưởng lẫn nhau.
 
-**多 Key + 跨模型降级配置示例**：
+**Ví dụ cấu hình đa Key +降级跨模型**:
 
 ```env
-# 主模型：3 个 Gemini Key 轮换，任一 429 时 Router 自动切换下一个 Key
+# Mô hình chính: 3 Key Gemini luân phiên, Router tự chuyển Key tiếp theo khi 429
 GEMINI_API_KEYS=key1,key2,key3
 LITELLM_MODEL=gemini/gemini-3-flash-preview
 
-# 跨模型降级：主模型全部 Key 均失败时，按序尝试 Claude → GPT
-# 需配置对应 API Key：ANTHROPIC_API_KEY、OPENAI_API_KEY
+#降级跨模型: khi tất cả Key mô hình chính đều thất bại, thử Claude → GPT theo thứ tự
+# Cần cấu hình API Key tương ứng: ANTHROPIC_API_KEY, OPENAI_API_KEY
 LITELLM_FALLBACK_MODELS=anthropic/claude-3-5-sonnet-20241022,openai/gpt-4o-mini
 ```
 
-**预期行为**：首次请求用 `key1`；若 429，Router 下次用 `key2`；若 3 个 Key 均不可用，则切换到 Claude，再失败则切换到 GPT。
+**Hành vi dự kiến**: Request đầu tiên dùng `key1`; nếu 429, Router lần sau dùng `key2`; nếu 3 Key đều không dùng được, chuyển sang Claude, thất bại nữa thì chuyển sang GPT.
 
-> ⚠️ `LITELLM_MODEL` 必须包含 provider 前缀（如 `gemini/`、`anthropic/`、`openai/`），
-> 否则系统无法识别应使用哪组 API Key。旧格式的 `GEMINI_MODEL`（无前缀）仅用于未配置 `LITELLM_MODEL` 时的自动推断。
+> ⚠️ `LITELLM_MODEL` phải chứa prefix provider (như `gemini/`, `anthropic/`, `openai/`),
+> nếu không hệ thống không nhận diện được dùng nhóm API Key nào. Định dạng cũ `GEMINI_MODEL` (không prefix) chỉ dùng để tự suy luận khi chưa cấu hình `LITELLM_MODEL`.
 
-**依赖说明**：`requirements.txt` 中保留 `openai>=1.0.0`，因 LiteLLM 内部依赖 OpenAI SDK 作为统一接口；显式保留可确保版本兼容性，用户无需单独配置。
+**Giải thích dependency**: `requirements.txt` giữ `openai>=1.0.0`, vì LiteLLM phụ thuộc vào OpenAI SDK làm interface thống nhất; giữ rõ ràng đảm bảo tương thích phiên bản, người dùng không cần cấu hình riêng.
 
-**视觉模型（图片提取股票代码）**：详见 [LLM 配置指南 - Vision](LLM_CONFIG_GUIDE.md#41-vision-模型图片识别股票代码)。
+**Mô hình Vision (ảnh trích mã cổ phiếu)**: Xem chi tiết [Hướng Dẫn Cấu Hình LLM - Vision](LLM_CONFIG_GUIDE.md#41-vision-模型图片识别股票代码).
 
-从图片提取股票代码（如 `/api/v1/stocks/extract-from-image`）使用 LiteLLM Vision，采用 OpenAI `image_url` 格式，支持 Gemini、Claude、OpenAI、DeepSeek 等 Vision-capable 模型。返回 `items`（code、name、confidence）及兼容的 `codes` 数组。
+Trích mã cổ phiếu từ ảnh (như `/api/v1/stocks/extract-from-image`) dùng LiteLLM Vision, áp dụng định dạng OpenAI `image_url`, hỗ trợ mô hình có khả năng Vision như Gemini, Claude, OpenAI, DeepSeek... Trả về `items` (code, name, confidence) và mảng `codes` tương thích.
 
-> 兼容性说明：`/api/v1/stocks/extract-from-image` 响应在原 `codes` 基础上新增 `items` 字段。若下游客户端使用严格 JSON Schema 且不接受未知字段，请同步更新 schema。
+> Giải thích tương thích: Phản hồi `/api/v1/stocks/extract-from-image` bổ sung trường `items` trên cơ sở `codes` gốc. Nếu client downstream dùng JSON Schema nghiêm ngặt và không chấp nhận trường lạ, vui lòng cập nhật schema đồng bộ.
 
-**智能导入**：除图片外，还支持 CSV/Excel 文件及剪贴板粘贴（`/api/v1/stocks/parse-import`），自动解析代码/名称列，名称→代码解析支持本地映射、拼音匹配及 AkShare 在线 fallback。依赖 `pypinyin`（拼音匹配）和 `openpyxl`（Excel 解析），已包含在 `requirements.txt` 中。
+**Import thông minh**: Ngoài ảnh, còn hỗ trợ file CSV/Excel và dán clipboard (`/api/v1/stocks/parse-import`), tự động phân tích cột mã/tên, phân tích tên→mã hỗ trợ ánh xạ cục bộ, khớp pinyin và fallback online AkShare. Phụ thuộc `pypinyin` (khớp pinyin) và `openpyxl` (phân tích Excel), đã bao gồm trong `requirements.txt`.
 
-- **AkShare 名称解析缓存**：名称→代码解析使用 AkShare 在线 fallback 时，结果缓存 1 小时（TTL），避免频繁请求；首次调用或缓存过期后会自动刷新。
-- **CSV/Excel 列名**：支持 `code`、`股票代码`、`代码`、`name`、`股票名称`、`名称` 等（不区分大小写）；无表头时默认第 1 列为代码、第 2 列为名称。
-- **常见解析失败**：文件过大（>2MB）、编码非 UTF-8/GBK、Excel 工作表为空或损坏、CSV 分隔符/列数不一致时，API 会返回具体错误提示。
+- **Cache phân tích tên AkShare**: Khi dùng fallback online AkShare để phân tích tên→mã, kết quả cache 1 giờ (TTL), tránh request频繁; tự động refresh khi gọi lần đầu hoặc cache hết hạn.
+- **Tên cột CSV/Excel**: Hỗ trợ `code`, `股票代码`, `代码`, `name`, `股票名称`, `名称`... (không phân biệt hoa thường); không có header thì mặc định cột 1 là mã, cột 2 là tên.
+- **Phân tích thất bại thường gặp**: File quá lớn (>2MB), encoding không phải UTF-8/GBK, Excel sheet trống hoặc hỏng, CSV sai delimiter/số cột... API sẽ trả về thông báo lỗi cụ thể.
 
-- **模型优先级**：`VISION_MODEL` > `LITELLM_MODEL` > 根据已有 API Key 推断（`OPENAI_VISION_MODEL` 已废弃，请改用 `VISION_MODEL`）
-- **Provider 回退**：主模型失败时，按 `VISION_PROVIDER_PRIORITY`（默认 `gemini,anthropic,openai`）自动切换到下一个可用 provider
-- **主模型不支持 Vision 时**：若主模型为 DeepSeek 等非 Vision 模型，可显式配置 `VISION_MODEL=openai/gpt-4o` 或 `gemini/gemini-2.0-flash` 供图片提取使用
-- **配置校验**：若配置了 `VISION_MODEL` 但未配置对应 provider 的 API Key，启动时会输出 warning，图片提取功能将不可用
+- **Ưu tiên mô hình**: `VISION_MODEL` > `LITELLM_MODEL` > suy luận từ API Key hiện có (`OPENAI_VISION_MODEL` đã bỏ, vui lòng dùng `VISION_MODEL`)
+- **Fallback Provider**: Khi mô hình chính thất bại, tự động chuyển sang provider tiếp theo theo `VISION_PROVIDER_PRIORITY` (mặc định `gemini,anthropic,openai`)
+- **Khi mô hình chính không hỗ trợ Vision**: Nếu mô hình chính là DeepSeek hoặc mô hình không có Vision, có thể cấu hình rõ `VISION_MODEL=openai/gpt-4o` hoặc `gemini/gemini-2.0-flash` cho trích xuất ảnh
+- **Kiểm tra cấu hình**: Nếu cấu hình `VISION_MODEL` nhưng không cấu hình API Key provider tương ứng, sẽ xuất hiện warning khi khởi động, chức năng trích xuất ảnh sẽ không khả dụng
 
-### 调试模式
+### Chế Độ Debug
 
 ```bash
 python main.py --debug
 ```
 
-日志文件位置：
-- 常规日志：`logs/stock_analysis_YYYYMMDD.log`
-- 调试日志：`logs/stock_analysis_debug_YYYYMMDD.log`
+Vị trí file log:
+- Log thường: `logs/stock_analysis_YYYYMMDD.log`
+- Log debug: `logs/stock_analysis_debug_YYYYMMDD.log`
 
 ---
 
-## 回测功能
+## Chức Năng Backtest
 
-回测模块自动对历史 AI 分析记录进行事后验证，评估分析建议的准确性。
+Module backtest tự động xác minh事后 đối với bản ghi phân tích AI lịch sử, đánh giá độ chính xác của khuyến nghị phân tích.
 
-### 工作原理
+### Nguyên Lý Hoạt Động
 
-1. 选取已过冷却期（默认 14 天）的 `AnalysisHistory` 记录
-2. 获取分析日之后的日线数据（前向 K 线）
-3. 根据操作建议推断预期方向，与实际走势对比
-4. 评估止盈/止损命中情况，模拟执行收益
-5. 汇总为整体和单股两个维度的表现指标
+1. Chọn bản ghi `AnalysisHistory` đã qua thời gian làm lạnh (mặc định 14 ngày)
+2. Lấy dữ liệu nến ngày sau ngày phân tích (K-line hướng tới)
+3. Suy luận hướng dự kiến dựa trên khuyến nghị thao tác, so sánh với xu hướng thực tế
+4. Đánh giá tình hình kích hoạt chốt lời/cắt lỗ, mô phỏng lợi nhuận thực thi
+5. Tổng hợp thành chỉ số biểu hiện ở cả hai cấp độ tổng thể và từng mã
 
-### 操作建议映射
+### Ánh Xạ Khuyến Nghị Thao Tác
 
-| 操作建议 | 仓位推断 | 预期方向 | 胜利条件 |
+| Khuyến nghị thao tác | Suy luận vị thế | Hướng dự kiến | Điều kiện thắng |
 |---------|---------|---------|---------|
-| 买入/加仓/strong buy | long | up | 涨幅 ≥ 中性带 |
-| 卖出/减仓/strong sell | cash | down | 跌幅 ≥ 中性带 |
-| 持有/hold | long | not_down | 未显著下跌 |
-| 观望/等待/wait | cash | flat | 价格在中性带内 |
+| Mua/thêm mua/strong buy | long | up | Tăng ≥ dải trung tính |
+| Bán/giảm vị thế/strong sell | cash | down | Giảm ≥ dải trung tính |
+| Giữ/hold | long | not_down | Không giảm đáng kể |
+| Chờ/đợi/wait | cash | flat | Giá trong dải trung tính |
 
-### 配置
+### Cấu Hình
 
-在 `.env` 中设置以下变量（均有默认值，可选）：
+Đặt các biến sau trong `.env` (đều có giá trị mặc định, tùy chọn):
 
-| 变量 | 默认值 | 说明 |
+| Biến | Mặc định | Mô tả |
 |------|-------|------|
-| `BACKTEST_ENABLED` | `true` | 是否在每日分析后自动运行回测 |
-| `BACKTEST_EVAL_WINDOW_DAYS` | `10` | 评估窗口（交易日数） |
-| `BACKTEST_MIN_AGE_DAYS` | `14` | 仅回测 N 天前的记录，避免数据不完整 |
-| `BACKTEST_ENGINE_VERSION` | `v1` | 引擎版本号，升级逻辑时用于区分结果 |
-| `BACKTEST_NEUTRAL_BAND_PCT` | `2.0` | 中性区间阈值（%），±2% 内视为震荡 |
+| `BACKTEST_ENABLED` | `true` | Có tự động chạy backtest sau phân tích hàng ngày không |
+| `BACKTEST_EVAL_WINDOW_DAYS` | `10` | Cửa sổ đánh giá (số ngày giao dịch) |
+| `BACKTEST_MIN_AGE_DAYS` | `14` | Chỉ backtest bản ghi từ N ngày trước, tránh dữ liệu không hoàn chỉnh |
+| `BACKTEST_ENGINE_VERSION` | `v1` | Phiên bản engine, dùng để phân biệt kết quả khi nâng cấp logic |
+| `BACKTEST_NEUTRAL_BAND_PCT` | `2.0` | Ngưỡng vùng trung tính (%), ±2% coi là震荡 |
 
-### 自动运行
+### Chạy Tự Động
 
-回测在每日分析流程完成后自动触发（非阻塞，失败不影响通知推送）。也可通过 API 手动触发。
+Backtest tự động kích hoạt sau khi hoàn thành quy trình phân tích hàng ngày (không chặn, thất bại không ảnh hưởng đẩy tin thông báo). Cũng có thể kích hoạt thủ công qua API.
 
-### 评估指标
+### Chỉ Số Đánh Giá
 
-| 指标 | 说明 |
+| Chỉ số | Mô tả |
 |------|------|
-| `direction_accuracy_pct` | 方向预测准确率（预期方向与实际一致） |
-| `win_rate_pct` | 胜率（胜 / (胜+负)，不含中性） |
-| `avg_stock_return_pct` | 平均股票收益率 |
-| `avg_simulated_return_pct` | 平均模拟执行收益率（含止盈止损退出） |
-| `stop_loss_trigger_rate` | 止损触发率（仅统计配置了止损的记录） |
-| `take_profit_trigger_rate` | 止盈触发率（仅统计配置了止盈的记录） |
+| `direction_accuracy_pct` | Độ chính xác dự đoán hướng (hướng dự kiến nhất quán với thực tế) |
+| `win_rate_pct` | Tỷ lệ thắng (thắng / (thắng+thua), không tính trung tính) |
+| `avg_stock_return_pct` | Tỷ suất lợi nhuận trung bình cổ phiếu |
+| `avg_simulated_return_pct` | Lợi nhuận mô phỏng thực thi trung bình (bao gồm thoát chốt lời/cắt lỗ) |
+| `stop_loss_trigger_rate` | Tỷ lệ kích hoạt cắt lỗ (chỉ thống kê bản ghi có cấu hình cắt lỗ) |
+| `take_profit_trigger_rate` | Tỷ lệ kích hoạt chốt lời (chỉ thống kê bản ghi có cấu hình chốt lời) |
 
 ---
 
-## FastAPI API 服务
+## Dịch Vụ API FastAPI
 
-FastAPI 提供 RESTful API 服务，支持配置管理和触发分析。
+FastAPI cung cấp dịch vụ RESTful API, hỗ trợ quản lý cấu hình và trigger phân tích.
 
-### 启动方式
+### Cách Khởi Động
 
-| 命令 | 说明 |
+| Lệnh | Mô tả |
 |------|------|
-| `python main.py --serve` | 启动 API 服务 + 执行一次完整分析 |
-| `python main.py --serve-only` | 仅启动 API 服务，手动触发分析 |
+| `python main.py --serve` | Khởi động API + thực thi 1 lần phân tích đầy đủ |
+| `python main.py --serve-only` | Chỉ khởi động API, trigger phân tích thủ công |
 
-### 功能特性
+### Tính Năng
 
-- 📝 **配置管理** - 查看/修改自选股列表
-- 🚀 **快速分析** - 通过 API 接口触发分析
-- 📊 **实时进度** - 分析任务状态实时更新，支持多任务并行
-- 📈 **回测验证** - 评估历史分析准确率，查询方向胜率与模拟收益
-- 🔗 **API 文档** - 访问 `/docs` 查看 Swagger UI
+- 📝 **Quản lý cấu hình** - Xem/sửa danh sách cổ phiếu tự chọn
+- 🚀 **Phân tích nhanh** - Trigger phân tích qua API
+- 📊 **Tiến độ realtime** - Trạng thái tác vụ phân tích cập nhật realtime, hỗ trợ đa tác vụ song song
+- 📈 **Xác minh backtest** - Đánh giá độ chính xác phân tích lịch sử, tra cứu tỷ lệ thắng hướng và lợi nhuận mô phỏng
+- 🔗 **Tài liệu API** - Truy cập `/docs` xem Swagger UI
 
-### API 接口
+### API Endpoints
 
-| 接口 | 方法 | 说明 |
+| Endpoint | Method | Mô tả |
 |------|------|------|
-| `/api/v1/analysis/analyze` | POST | 触发股票分析 |
-| `/api/v1/analysis/tasks` | GET | 查询任务列表 |
-| `/api/v1/analysis/status/{task_id}` | GET | 查询任务状态 |
-| `/api/v1/history` | GET | 查询分析历史 |
-| `/api/v1/backtest/run` | POST | 触发回测 |
-| `/api/v1/backtest/results` | GET | 查询回测结果（分页） |
-| `/api/v1/backtest/performance` | GET | 获取整体回测表现 |
-| `/api/v1/backtest/performance/{code}` | GET | 获取单股回测表现 |
-| `/api/v1/stocks/extract-from-image` | POST | 从图片提取股票代码（multipart，超时 60s） |
-| `/api/v1/stocks/parse-import` | POST | 解析 CSV/Excel/剪贴板（multipart file 或 JSON `{"text":"..."}`，文件≤2MB，文本≤100KB） |
-| `/api/health` | GET | 健康检查 |
-| `/docs` | GET | API Swagger 文档 |
+| `/api/v1/analysis/analyze` | POST | Trigger phân tích cổ phiếu |
+| `/api/v1/analysis/tasks` | GET | Tra cứu danh sách tác vụ |
+| `/api/v1/analysis/status/{task_id}` | GET | Tra cứu trạng thái tác vụ |
+| `/api/v1/history` | GET | Tra cứu lịch sử phân tích |
+| `/api/v1/backtest/run` | POST | Trigger backtest |
+| `/api/v1/backtest/results` | GET | Tra cứu kết quả backtest (phân trang) |
+| `/api/v1/backtest/performance` | GET | Lấy biểu hiện backtest tổng thể |
+| `/api/v1/backtest/performance/{code}` | GET | Lấy biểu hiện backtest từng mã |
+| `/api/v1/stocks/extract-from-image` | POST | Trích mã cổ phiếu từ ảnh (multipart, timeout 60s) |
+| `/api/v1/stocks/parse-import` | POST | Phân tích CSV/Excel/clipboard (multipart file hoặc JSON `{"text":"..."}`, file≤2MB, text≤100KB) |
+| `/api/health` | GET | Kiểm tra sức khỏe |
+| `/docs` | GET | Tài liệu Swagger API |
 
-> 说明：`POST /api/v1/analysis/analyze` 在 `async_mode=false` 时仅支持单只股票；批量 `stock_codes` 需使用 `async_mode=true`。异步 `202` 响应对单股返回 `task_id`，对批量返回 `accepted` / `duplicates` 汇总结构。
+> Lưu ý: `POST /api/v1/analysis/analyze` khi `async_mode=false` chỉ hỗ trợ 1 cổ phiếu; `stock_codes` batch cần dùng `async_mode=true`. Phản hồi async `202` trả về `task_id` cho个股, trả về cấu trúc tổng hợp `accepted` / `duplicates` cho batch.
 
-**调用示例**：
+**Ví dụ gọi**:
 ```bash
-# 健康检查
+# Kiểm tra sức khỏe
 curl http://127.0.0.1:8000/api/health
 
-# 触发分析（A股）
+# Trigger phân tích (A-share)
 curl -X POST http://127.0.0.1:8000/api/v1/analysis/analyze \
   -H 'Content-Type: application/json' \
   -d '{"stock_code": "600519"}'
 
-# 查询任务状态
+# Tra cứu trạng thái tác vụ
 curl http://127.0.0.1:8000/api/v1/analysis/status/<task_id>
 
-# 触发回测（全部股票）
+# Trigger backtest (tất cả cổ phiếu)
 curl -X POST http://127.0.0.1:8000/api/v1/backtest/run \
   -H 'Content-Type: application/json' \
   -d '{"force": false}'
 
-# 触发回测（指定股票）
+# Trigger backtest (chỉ định cổ phiếu)
 curl -X POST http://127.0.0.1:8000/api/v1/backtest/run \
   -H 'Content-Type: application/json' \
   -d '{"code": "600519", "force": false}'
 
-# 查询整体回测表现
+# Tra cứu biểu hiện backtest tổng thể
 curl http://127.0.0.1:8000/api/v1/backtest/performance
 
-# 查询单股回测表现
+# Tra cứu biểu hiện backtest từng mã
 curl http://127.0.0.1:8000/api/v1/backtest/performance/600519
 
-# 分页查询回测结果
+# Tra cứu phân trang kết quả backtest
 curl "http://127.0.0.1:8000/api/v1/backtest/results?page=1&limit=20"
 ```
 
-### 自定义配置
+### Cấu Hình Tùy Chỉnh
 
-修改默认端口或允许局域网访问：
+Sửa cổng mặc định hoặc cho phép truy cập mạng LAN:
 
 ```bash
 python main.py --serve-only --host 0.0.0.0 --port 8888
 ```
 
-### 支持的股票代码格式
+### Định Dạng Mã Cổ Phiếu Hỗ Trợ
 
-| 类型 | 格式 | 示例 |
+| Loại | Định dạng | Ví dụ |
 |------|------|------|
-| A股 | 6位数字 | `600519`、`000001`、`300750` |
-| 北交所 | 8/4/92 开头 6 位 | `920748`、`838163`、`430047` |
-| 港股 | hk + 5位数字 | `hk00700`、`hk09988` |
-| 美股 | 1-5 字母（可选 .X 后缀） | `AAPL`、`TSLA`、`BRK.B` |
-| 美股指数 | SPX/DJI/IXIC 等 | `SPX`、`DJI`、`NASDAQ`、`VIX` |
+| A-share | 6 chữ số | `600519`, `000001`, `300750` |
+| Sở Bắc Kinh | Bắt đầu 8/4/92, 6 chữ số | `920748`, `838163`, `430047` |
+| HK stock | hk + 5 chữ số | `hk00700`, `hk09988` |
+|美股 | 1-5 chữ cái (có thể hậu tố .X) | `AAPL`, `TSLA`, `BRK.B` |
+|美股指数 | SPX/DJI/IXIC... | `SPX`, `DJI`, `NASDAQ`, `VIX` |
 
-### 注意事项
+### Lưu Ý
 
-- 浏览器访问：`http://127.0.0.1:8000`（或您配置的端口）
-- 在云服务器上部署后，不知道浏览器该输入什么地址？请看 [云服务器 Web 界面访问指南](deploy-webui-cloud.md)
-- 分析完成后自动推送通知到配置的渠道
-- 此功能在 GitHub Actions 环境中会自动禁用
-- 另见 [openclaw Skill 集成指南](openclaw-skill-integration.md)
-
----
-
-## 常见问题
-
-### Q: 推送消息被截断？
-A: 企业微信/飞书有消息长度限制，系统已自动分段发送。如需完整内容，可配置飞书云文档功能。
-
-### Q: 数据获取失败？
-A: AkShare 使用爬虫机制，可能被临时限流。系统已配置重试机制，一般等待几分钟后重试即可。
-
-### Q: 如何添加自选股？
-A: 修改 `STOCK_LIST` 环境变量，多个代码用逗号分隔。
-
-### Q: GitHub Actions 没有执行？
-A: 检查是否启用了 Actions，以及 cron 表达式是否正确（注意是 UTC 时间）。
+- Truy cập trình duyệt: `http://127.0.0.1:8000` (hoặc cổng bạn đã cấu hình)
+- Sau khi deploy lên cloud server, không biết nhập địa chỉ gì trên trình duyệt? Xem [Hướng Dẫn Truy Cập Giao Diện Web Cloud Server](deploy-webui-cloud.md)
+- Sau khi phân tích xong tự động đẩy tin thông báo đến kênh đã cấu hình
+- Chức năng này sẽ tự động vô hiệu hóa trong môi trường GitHub Actions
+- Xem thêm [Hướng Dẫn Tích Hợp openclaw Skill](openclaw-skill-integration.md)
 
 ---
 
-更多问题请 [提交 Issue](https://github.com/ZhuLinsen/daily_stock_analysis/issues)
+## Câu Hỏi Thường Gặp
 
-## Portfolio P0 PR1 (Core Ledger and Snapshot)
+### Q: Tin nhắn đẩy bị cắt?
+A: WeChat Work/Feishu có giới hạn độ dài tin nhắn, hệ thống đã tự động phân đoạn gửi. Nếu cần nội dung đầy đủ, có thể cấu hình chức năng Feishu Cloud Document.
 
-### Scope
-- Core portfolio domain models:
+### Q: Lấy dữ liệu thất bại?
+A: AkShare dùng cơ chế crawler, có thể bị giới hạn tạm thời. Hệ thống đã cấu hình cơ chế thử lại, thường đợi vài phút rồi thử lại là được.
+
+### Q: Làm sao thêm cổ phiếu tự chọn?
+A: Sửa biến môi trường `STOCK_LIST`, nhiều mã cách nhau bởi dấu phẩy.
+
+### Q: GitHub Actions không thực thi?
+A: Kiểm tra xem đã bật Actions chưa, và cron expression có đúng không (lưu ý là giờ UTC).
+
+---
+
+Thêm câu hỏi vui lòng [tạo Issue](https://github.com/ZhuLinsen/daily_stock_analysis/issues)
+
+## Portfolio P0 PR1 (Sổ Cái Cốt Lõi Và Snapshot)
+
+### Phạm vi
+- Mô hình domain danh mục cốt lõi:
   - account, trade, cash ledger, corporate action, position cache, lot cache, daily snapshot, fx cache
-- Core service capability:
-  - account CRUD
-  - event writes
-  - read-time replay snapshot for one account or all active accounts
+- Năng lực dịch vụ cốt lõi:
+  - CRUD account
+  - Ghi event
+  - Snapshot replay read-time cho một account hoặc tất cả account đang hoạt động
 
-### Accounting semantics
-- Cost method:
-  - `fifo` (default)
+### Ngữ nghĩa kế toán
+- Phương pháp giá vốn:
+  - `fifo` (mặc định)
   - `avg`
-- Same-day event ordering:
+- Thứ tự event cùng ngày:
   - `cash -> corporate action -> trade`
-- Corporate action effective-date rule:
-  - `effective_date` is treated as effective before market trading on that day.
+- Quy tắc ngày hiệu lực corporate action:
+  - `effective_date` được xem là hiệu lực trước khi giao dịch thị trường trong ngày đó.
 
-### Error and stability semantics
-- `trade_uid` unique conflict returns `409` (API conflict semantics).
-- sell writes now validate available quantity before insert; oversell is rejected with `409 portfolio_oversell`.
-- portfolio source-event writes now serialize through a SQLite write lock; direct write/delete endpoints may return `409 portfolio_busy` when another ledger mutation is in progress.
-- Snapshot write path is atomic for positions/lots/daily snapshot.
-- FX conversion keeps fail-open behavior (fallback 1:1 with stale marker) to avoid pipeline interruption.
+### Ngữ nghĩa lỗi và ổn định
+- Xung đột unique `trade_uid` trả về `409` (ngữ nghĩa xung đột API).
+- Lệnh bán giờ kiểm tra số lượng khả dụng trước khi insert; bán vượt quá bị từ chối với `409 portfolio_oversell`.
+- Ghi event nguồn portfolio giờ tuần tự hóa qua khóa ghi SQLite; endpoint ghi/xóa trực tiếp có thể trả về `409 portfolio_busy` khi có đột biến sổ cái khác đang tiến hành.
+- Đường ghi snapshot nguyên tử cho position/lot/daily snapshot.
+- Chuyển đổi FX giữ hành vi fail-open (fallback 1:1 với marker stale) để tránh gián đoạn pipeline.
 
-### Test coverage in PR1
-- FIFO/AVG partial sell replay
-- Dividend and split replay
-- Same-day ordering (dividend/trade, split/trade)
-- API account/event/snapshot contract
-- API duplicate trade_uid conflict
+### Phạm vi kiểm thử trong PR1
+- Replay bán một phần FIFO/AVG
+- Replay cổ tức và split
+- Sắp xếp cùng ngày (cổ tức/giao dịch, split/giao dịch)
+- Hợp đồng API account/event/snapshot
+- Xung đột trade_uid trùng API
 
-## Portfolio P0 PR2 (Import and Risk)
+## Portfolio P0 PR2 (Import Và Rủi Ro)
 
-### CSV import
-- Supported broker ids: `huatai`, `citic`, `cmb`.
-- Unified workflow: parse CSV into normalized records, then commit into portfolio trades.
-- Commit remains row-by-row instead of one long transaction; busy rows count into `failed_count` rather than converting the whole request to `409`.
-- Dedup policy:
-  - First key: `trade_uid` (account-scoped)
-  - Fallback key: deterministic hash of date/symbol/side/qty/price/fee/tax/currency
+### Import CSV
+- Broker hỗ trợ: `huatai`, `citic`, `cmb`.
+- Quy trình thống nhất: phân tích CSV thành bản ghi chuẩn hóa, sau đó commit vào trade portfolio.
+- Commit vẫn theo từng dòng thay vì một giao dịch dài; dòng bận tính vào `failed_count` thay vì chuyển toàn bộ request thành `409`.
+- Chính sách loại trùng:
+  - Khóa chính: `trade_uid` (phạm vi account)
+  - Khóa fallback: hash xác định từ date/symbol/side/qty/price/fee/tax/currency
 
-### Risk report
-- Concentration monitoring: top position weight alert by config threshold.
-- Drawdown monitoring: max/current drawdown computed from daily snapshots.
-- Stop-loss proximity warning: mark near-alert and triggered items with threshold echo.
+### Báo cáo rủi ro
+- Giám sát tập trung: cảnh báo trọng lượng vị thế top theo ngưỡng cấu hình.
+- Giám sát sụt giảm: sụt giảm tối đa/hiện tại tính từ daily snapshot.
+- Cảnh báo gần dừng lỗ: đánh dấu mục gần cảnh báo và đã kích hoạt với echo ngưỡng.
 
 ### FX fail-open
-- FX refresh first tries online source (YFinance).
-- On online failure, fallback to latest cached rate and mark `is_stale=true`.
-- Main snapshot/risk pipeline stays available even when online FX fetch is unavailable.
+- FX refresh trước tiên thử nguồn online (YFinance).
+- Khi online thất bại, fallback sang tỷ giá cache mới nhất và đánh dấu `is_stale=true`.
+- Pipeline snapshot/rủi ro chính vẫn khả dụng ngay cả khi fetch FX online không khả dụng.
 
-## Portfolio P0 PR3 (Web + Agent Consumption)
+## Portfolio P0 PR3 (Web + Tiêu Thụ Agent)
 
-### Web consumption page
-- Added Web page route: `/portfolio` (`apps/dsa-web/src/pages/PortfolioPage.tsx`).
-- Data sources:
+### Trang tiêu thụ Web
+- Thêm route trang Web: `/portfolio` (`apps/dsa-web/src/pages/PortfolioPage.tsx`).
+- Nguồn dữ liệu:
   - `GET /api/v1/portfolio/snapshot`
   - `GET /api/v1/portfolio/risk`
-- Supports:
-  - full portfolio / single account switch
-  - cost method switch (`fifo` / `avg`)
-  - concentration pie chart (Top Positions) with Recharts
-  - snapshot KPI cards and risk summary cards
+- Hỗ trợ:
+  - Chuyển đổi toàn bộ danh mục / account đơn
+  - Chuyển đổi phương pháp giá vốn (`fifo` / `avg`)
+  - Biểu đồ tròn tập trung (Top Positions) với Recharts
+  - Thẻ KPI snapshot và thẻ tóm tắt rủi ro
 
-### Agent tool
-- Added `get_portfolio_snapshot` data tool for account-aware LLM suggestions.
-- Default behavior:
-  - compact summary output (token-friendly)
-  - includes optional compact risk block
-- Optional parameters:
+### Công cụ Agent
+- Thêm công cụ dữ liệu `get_portfolio_snapshot` cho gợi ý LLM nhận biết account.
+- Hành vi mặc định:
+  - Đầu ra tóm tắt gọn (thân thiện token)
+  - Bao gồm khối rủi ro tùy chọn
+- Tham số tùy chọn:
   - `account_id`
   - `cost_method` (`fifo` / `avg`)
   - `as_of` (`YYYY-MM-DD`)
-  - `include_positions` (default `false`)
-  - `include_risk` (default `true`)
+  - `include_positions` (mặc định `false`)
+  - `include_risk` (mặc định `true`)
 
-### Stability and compatibility
-- New capability is additive only; no removal of existing keys/routes.
-- Fail-open semantics:
-  - If risk block fails, snapshot is still returned.
-  - If portfolio module is unavailable, tool returns structured `not_supported`.
+### Ổn định và tương thích
+- Năng lực mới chỉ mang tính bổ sung; không xóa key/route hiện có.
+- Ngữ nghĩa fail-open:
+  - Nếu khối rủi ro thất bại, snapshot vẫn được trả về.
+  - Nếu module portfolio không khả dụng, công cụ trả về `not_supported` có cấu trúc.
 
-## Portfolio P0 PR4 (Gap Closure)
+## Portfolio P0 PR4 (Đóng Khoảng Trống)
 
-### API query closure
-- Added event query endpoints:
+### Đóng truy vấn API
+- Thêm endpoint truy vấn event:
   - `GET /api/v1/portfolio/trades`
   - `GET /api/v1/portfolio/cash-ledger`
   - `GET /api/v1/portfolio/corporate-actions`
-- Added event delete endpoints:
+- Thêm endpoint xóa event:
   - `DELETE /api/v1/portfolio/trades/{trade_id}`
   - `DELETE /api/v1/portfolio/cash-ledger/{entry_id}`
   - `DELETE /api/v1/portfolio/corporate-actions/{action_id}`
-- Unified query parameters:
+- Tham số truy vấn thống nhất:
   - `account_id`, `date_from`, `date_to`, `page`, `page_size`
-- Trade/cash/corporate-action specific filters:
+- Bộ lọc riêng trade/cash/corporate-action:
   - trades: `symbol`, `side`
   - cash-ledger: `direction`
   - corporate-actions: `symbol`, `action_type`
-- Unified response shape:
+- Hình dạng phản hồi thống nhất:
   - `items`, `total`, `page`, `page_size`
 
-### CSV import framework
-- Reworked parser logic into extensible parser registry.
-- Built-in adapters remain: `huatai`, `citic`, `cmb` with alias mapping.
-- Added parser discovery endpoint:
+### Framework import CSV
+- Tái cấu trúc logic parser thành registry parser mở rộng.
+- Adapter tích hợp sẵn giữ nguyên: `huatai`, `citic`, `cmb` với ánh xạ alias.
+- Thêm endpoint khám phá parser:
   - `GET /api/v1/portfolio/imports/csv/brokers`
 
-### Web closure
-- `/portfolio` page now includes:
-  - inline account creation entry with empty-state guide and auto-switch to created account
-  - manual event entry forms: trade / cash / corporate action
-  - CSV parse + commit operations (supports `dry_run`)
-  - event list panel with filters and pagination
-  - single-account scoped event deletion for trade / cash / corporate action correction
-  - broker selector fallback to built-in brokers (`huatai/citic/cmb`) when broker list API fails or returns empty
-  - FX status card manual refresh action that calls existing `POST /api/v1/portfolio/fx/refresh`; if upstream FX fetch fails, the page may still show stale after refresh and will explain the result inline
-  - when `PORTFOLIO_FX_UPDATE_ENABLED=false`, the refresh API now returns explicit disabled status and the page will show “汇率在线刷新已被禁用” instead of “当前范围无可刷新的汇率对”
+### Đóng Web
+- Trang `/portfolio` giờ bao gồm:
+  - Mục tạo account inline với hướng dẫn empty-state và tự chuyển sang account đã tạo
+  - Form nhập event thủ công: trade / cash / corporate action
+  - Thao tác phân tích + commit CSV (hỗ trợ `dry_run`)
+  - Bảng event với bộ lọc và phân trang
+  - Xóa event phạm vi account đơn để sửa trade / cash / corporate action
+  - Fallback bộ chọn broker về broker tích hợp sẵn (`huatai/citic/cmb`) khi API danh sách broker thất bại hoặc trả về rỗng
+  - Hành động refresh thủ công thẻ trạng thái FX gọi `POST /api/v1/portfolio/fx/refresh` hiện có; nếu fetch FX upstream thất bại, trang vẫn có thể hiển thị stale sau refresh và sẽ giải thích kết quả inline
+  - khi `PORTFOLIO_FX_UPDATE_ENABLED=false`, API refresh giờ trả về trạng thái disabled rõ ràng và trang sẽ hiển thị "汇率在线刷新已被禁用" thay vì "当前范围无可刷新的汇率对"
 
-### Risk sector concentration semantics
-- Added `sector_concentration` in `GET /api/v1/portfolio/risk`.
-- Mapping rules:
-  - CN positions try board mapping from `get_belong_boards`.
-  - Non-CN or mapping failure falls back to `UNCLASSIFIED`.
-  - Uses single primary board per symbol to avoid duplicate weighting.
+### Ngữ nghĩa tập trung sector rủi ro
+- Thêm `sector_concentration` trong `GET /api/v1/portfolio/risk`.
+- Quy tắc ánh xạ:
+  - Position CN thử ánh xạ board từ `get_belong_boards`.
+  - Non-CN hoặc ánh xạ thất bại fallback về `UNCLASSIFIED`.
+  - Dùng board chính duy nhất mỗi symbol để tránh trọng lượng trùng.
 - Fail-open:
-  - board lookup errors do not interrupt risk response.
-  - response returns coverage/error details for explainability.
+  - lỗi tra cứu board không làm gián đoạn phản hồi rủi ro.
+  - phản hồi trả về chi tiết coverage/lỗi để giải thích.

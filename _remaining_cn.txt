@@ -1,0 +1,11 @@
+strategies\bottom_volume.yaml:
+  地量见底
+strategies\box_oscillation.yaml:
+  战法
+strategies\dragon_head.yaml:
+  策略
+  战法
+strategies\shrink_pullback.yaml:
+  回踩
+strategies\wave_theory.yaml:
+  艾略特

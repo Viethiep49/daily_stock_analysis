@@ -1,4 +1,4 @@
-# Shrink Volume Pullback Strategy / 缩量回踩
+# Shrink Volume Pullback Strategy / Giam khoi luong hoi phuc
 # Volume shrinks during pullback to MA5/MA10, then price bounces.
 
 name: shrink_pullback
@@ -10,40 +10,39 @@ required_tools:
   - get_daily_history
   - analyze_trend
   - get_realtime_quote
-aliases: [缩量回踩, 回踩]
+aliases: [giam khoi luong hoi phuc, hoi phuc]
 default_router: true
 default_priority: 40
 market_regimes: [trending_down, sideways]
 
 instructions: |
-  **缩量回踩（Shrink Volume Pullback Strategy）**
+  **Hoi Ve Thu Hep Khoi Luong (Shrink Volume Pullback Strategy)**
 
-  入场判定标准：
+  Tieu chuan xac dinh vao:
 
-  1. **前提条件**（关联理念2：趋势交易）：
-     - 股票必须处于上升趋势（MA5 > MA10 > MA20）。
-     - 使用 `analyze_trend` 确认多头排列。
+  1. **Dieu kien tien quyet**:
+     - Co phieu phai o xu huong tang (MA5 > MA10 > MA20).
+     - Su dung `analyze_trend` xac nhan sap xep tang.
 
-  2. **回踩检测**（关联理念4：买点偏好）：
-     - 使用 `get_daily_history` 和 `get_realtime_quote`。
-     - 价格回踩至 MA5 附近（误差 1% 以内）或 MA10 附近（误差 2% 以内）。
-     - 回调期间成交量 < 5 日均量的 70%（缩量特征）。
-     - `analyze_trend` → volume_status 应显示缩量。
+  2. **Phat hien hut lai**:
+     - Su dung `get_daily_history` va `get_realtime_quote`.
+     - Gia hut lai gan MA5 (sai so 1% hoac it hon) hoac gan MA10 (sai so 2% hoac it hon).
+     - Trong thoi gian dieu chinh khoi luong < 70% khoi luong trung binh 5 ngay (dac trung co luong).
+     - `analyze_trend` -> volume_status phai cho thay co luong.
 
-  3. **反弹信号**（关联理念1：严进策略）：
-     - 当前价格守住均线支撑位。
-     - MA5 乖离率 < 2% — 最佳买入区间。
+  3. **Tin hieu hoi phuc**:
+     - Gia hien tai giu duoc vi tri ho tro MA.
+     - Ty le lech MA5 < 2% -- vung mua tot nhat.
 
-  4. **确认条件**（关联理念5：风险排查）：
-     - `search_stock_news` 无利空消息。
-     - 筹码分布健康（获利比例 50-80%）。
+  4. **Dieu kien xac nhan**:
+     - `search_stock_news` khong co tin tuc tieu cuc.
+     - Phan bo chip khoe manh (ty le loi nhuan 50-80%).
 
-  评分调整：
-  - 缩量回踩 MA5：sentiment_score +10
-  - 缩量回踩 MA10 且量能 < 0.6 倍均量：sentiment_score +8
-  - 理想买点设在 MA5 水平，次优买点设在 MA10。
-  - 止损设在 MA20 水平。
-  - 在 `buy_reason` 中注明"缩量回踩"。
+  ## Dieu chinh diem:
+  - Co luong hut lai MA5: sentiment_score +10
+  - Co luong hut lai MA10 va nang luong < 0.6 lan trung binh: sentiment_score +8
+  - Diem mua ly tuong o muc MA5, diem mua thu hai o MA10.
+  - Dung sai o muc MA20.
 
 # Vietnam market parameters (HOSE/HNX)
 vn_market:

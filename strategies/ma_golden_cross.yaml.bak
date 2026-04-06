@@ -1,0 +1,59 @@
+# MA Golden Cross Strategy / 均线金叉
+# MA5 crosses above MA10 (or MA10 above MA20) with volume confirmation.
+
+name: ma_golden_cross
+display_name: Giao Cat Vang MA
+description: Phat hien tin hieu giao cat vang MA ngan han va dai han.
+category: trend
+core_rules: [1, 2, 3]
+required_tools:
+  - get_daily_history
+  - analyze_trend
+aliases: [均线金叉, 金叉]
+default_priority: 20
+market_regimes: [trending_up]
+
+instructions: |
+  **Giao Cat Vang MA (MA Golden Cross Strategy)**
+
+  Tieu chuan xac dinh tin hieu:
+
+  1. **Phat hien giao cat vang**:
+     - Su dung `analyze_trend` kiem tra sap xep MA va trang thai MACD.
+     - Tin hieu chinh: MA5 cat len MA10 trong 3 ngay gan nhat.
+     - Tin hieu manh: MA10 cat len MA20 (cham hon nhung chac chan hon).
+     - Kiem tra trang thai MACD co phai giao cat vang hoac giao cat vang tren truc 0.
+
+  2. **Xac nhan nang luong**:
+     - Ngay giao cat vang khoi luong phai cao hon khoi luong trung binh 5 ngay.
+     - Su dung `get_daily_history` xac thuc.
+     - Ngay giao cat vang khoi luong ty > 1.2 la tin hieu tich cuc.
+
+  3. **Boi canh xu huong**:
+     - Giao cat vang sau dao dong: tin hieu manh nhat.
+     - Giao cat vang trong xu huong tang: tin hieu tiep tuc.
+     - Giao cat vang trong giam manh: tin hieu yeu, can xac nhan them.
+
+  4. **Vi tri gia**:
+     - Gia phai o gan hoac tren duong MA giao cat.
+     - Ty le lech < 5% -- tranh duoi theo vao tre.
+
+  ## Dieu chinh diem:
+  - MA5 x MA10 giao cat vang kem nang luong: sentiment_score +10
+  - MA10 x MA20 giao cat vang: sentiment_score +8
+  - MACD giao cat vang tren truc 0: cong them +5
+  - Diem mua ly tuong o gan muc duong MA giao cat.
+
+# Vietnam market parameters (HOSE/HNX)
+vn_market:
+  price_limit_hose: 0.07          # HOSE daily limit +/-7%
+  price_limit_hnx: 0.10           # HNX daily limit +/-10%
+  lot_size: 100                   # Minimum lot = 100 shares
+  settlement_rule: "T+2.5"        # Shares available to sell from T+2 afternoon
+  short_selling: false            # Not legally permitted in Vietnam
+  Vietnam Market Rules (HOSE/HNX):
+  - Price limit: HOSE +/-7% / HNX +/-10% per session.
+  - T+2.5 settlement: shares bought on T are only sellable from 13:00 on T+2.
+    Do NOT generate sell signals for stocks bought within the last 2 trading days.
+  - Lot size: all quantities must be multiples of 100 shares.
+  - Short selling is not permitted. Long positions only.
