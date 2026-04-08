@@ -61,7 +61,7 @@ instructions: |
    Tiêu chí đánh giá:
 
    1. **Điều kiện một**:
-      - Dùng `analyze_trend` kiểm tra sắp xếp đường均线.
+      - Dùng `analyze_trend` kiểm tra sắp xếp đườngMA.
       - Mô tả đặc trưng xu hướng bạn mong đợi...
 
    2. **Điều kiện hai**:
@@ -79,7 +79,7 @@ instructions: |
 | 1 | Vào nghiêm ngặt: Độ lệch giá < 5% mới xem xét vào lệnh |
 | 2 | Giao dịch xu hướng: MA5 > MA10 > MA20 sắp xếp đa đầu |
 | 3 | Ưu tiên hiệu suất: Khối lượng xác nhận tính hiệu quả xu hướng |
-| 4 | Ưu tiên điểm mua: Ưu tiên hồi về hỗ trợ đường均线 |
+| 4 | Ưu tiên điểm mua: Ưu tiên hồi về hỗ trợ đườngMA |
 | 5 | Kiểm tra rủi ro: Tin tức tiêu cực phủ quyết một phiếu |
 | 6 | Phối hợp lượng giá: Khối lượng giao dịch xác nhận vận động giá |
 | 7 | Nới lỏng cổ phiếu xu hướng mạnh: Cổ phiếu đầu ngành có thể nới lỏng tiêu chuẩn |

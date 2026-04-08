@@ -1,18 +1,18 @@
 # -*- coding: utf-8 -*-
 """
 ===================================
-A股自选股智能分析系统 - 通知层
+Stock Watchlist Intelligent Analysis System - Notification Layer
 ===================================
 
-职责：
-1. 汇总分析结果生成日报
-2. 支持 Markdown 格式输出
-3. 多渠道推送（自动识别）：
-   - 企业微信 Webhook
-   - 飞书 Webhook
+Responsibilities:
+1. Aggregate analysis results and generate daily reports
+2. Support Markdown format output
+3. Multi-channel push (auto-detected):
+   - WeCom Webhook
+   - Feishu Webhook
    - Telegram Bot
-   - 邮件 SMTP
-   - Pushover（手机/桌面推送）
+   - Email SMTP
+   - Pushover (mobile/desktop push)
 """
 import logging
 from datetime import datetime
@@ -52,46 +52,46 @@ logger = logging.getLogger(__name__)
 
 
 class NotificationChannel(Enum):
-    """通知渠道类型"""
-    WECHAT = "wechat"      # 企业微信
-    FEISHU = "feishu"      # 飞书
+    """Notification channel types"""
+    WECHAT = "wechat"      # WeCom (Enterprise WeChat)
+    FEISHU = "feishu"      # Feishu (Lark)
     TELEGRAM = "telegram"  # Telegram
-    EMAIL = "email"        # 邮件
-    PUSHOVER = "pushover"  # Pushover（手机/桌面推送）
-    PUSHPLUS = "pushplus"  # PushPlus（国内推送服务）
-    SERVERCHAN3 = "serverchan3"  # Server酱3（手机APP推送服务）
-    CUSTOM = "custom"      # 自定义 Webhook
-    DISCORD = "discord"    # Discord 机器人 (Bot)
+    EMAIL = "email"        # Email
+    PUSHOVER = "pushover"  # Pushover (mobile/desktop push)
+    PUSHPLUS = "pushplus"  # PushPlus (domestic push service)
+    SERVERCHAN3 = "serverchan3"  # ServerChan3 (mobile app push service)
+    CUSTOM = "custom"      # Custom Webhook
+    DISCORD = "discord"    # Discord Bot
     SLACK = "slack"        # Slack
     ASTRBOT = "astrbot"
-    UNKNOWN = "unknown"    # 未知
+    UNKNOWN = "unknown"    # Unknown
 
 
 class ChannelDetector:
     """
-    渠道检测器 - 简化版
-    
-    根据配置直接判断渠道类型（不再需要 URL 解析）
+    Channel detector - simplified version
+
+    Determines the channel type directly from configuration (no URL parsing required)
     """
-    
+
     @staticmethod
     def get_channel_name(channel: NotificationChannel) -> str:
-        """获取渠道中文名称"""
+        """Get the display name of a channel"""
         names = {
-            NotificationChannel.WECHAT: "企业微信",
-            NotificationChannel.FEISHU: "飞书",
+            NotificationChannel.WECHAT: "WeCom",
+            NotificationChannel.FEISHU: "Feishu",
             NotificationChannel.TELEGRAM: "Telegram",
-            NotificationChannel.EMAIL: "邮件",
+            NotificationChannel.EMAIL: "Email",
             NotificationChannel.PUSHOVER: "Pushover",
             NotificationChannel.PUSHPLUS: "PushPlus",
-            NotificationChannel.SERVERCHAN3: "Server酱3",
-            NotificationChannel.CUSTOM: "自定义Webhook",
-            NotificationChannel.DISCORD: "Discord机器人",
+            NotificationChannel.SERVERCHAN3: "ServerChan3",
+            NotificationChannel.CUSTOM: "Custom Webhook",
+            NotificationChannel.DISCORD: "Discord Bot",
             NotificationChannel.SLACK: "Slack",
-            NotificationChannel.ASTRBOT: "ASTRBOT机器人",
-            NotificationChannel.UNKNOWN: "未知渠道",
+            NotificationChannel.ASTRBOT: "ASTRBOT Bot",
+            NotificationChannel.UNKNOWN: "Unknown Channel",
         }
-        return names.get(channel, "未知渠道")
+        return names.get(channel, "Unknown Channel")
 
 
 class NotificationService(
@@ -108,34 +108,34 @@ class NotificationService(
     WechatSender
 ):
     """
-    通知服务
-    
-    职责：
-    1. 生成 Markdown 格式的分析日报
-    2. 向所有已配置的渠道推送消息（多渠道并发）
-    3. 支持本地保存日报
-    
-    支持的渠道：
-    - 企业微信 Webhook
-    - 飞书 Webhook
+    Notification service
+
+    Responsibilities:
+    1. Generate Markdown-formatted analysis daily reports
+    2. Push messages to all configured channels (multi-channel concurrent)
+    3. Support saving reports locally
+
+    Supported channels:
+    - WeCom Webhook
+    - Feishu Webhook
     - Telegram Bot
-    - 邮件 SMTP
-    - Pushover（手机/桌面推送）
-    
-    注意：所有已配置的渠道都会收到推送
+    - Email SMTP
+    - Pushover (mobile/desktop push)
+
+    Note: All configured channels will receive the push notification
     """
     
     def __init__(self, source_message: Optional[BotMessage] = None):
         """
-        初始化通知服务
-        
-        检测所有已配置的渠道，推送时会向所有渠道发送
+        Initialize the notification service
+
+        Detects all configured channels; all channels receive the push when sending
         """
         config = get_config()
         self._source_message = source_message
         self._context_channels: List[str] = []
 
-        # Markdown 转图片（Issue #289）
+        # Markdown to image conversion (Issue #289)
         self._markdown_to_image_channels = set(
             getattr(config, 'markdown_to_image_channels', []) or []
         )
@@ -143,11 +143,11 @@ class NotificationService(
             config, 'markdown_to_image_max_chars', 15000
         )
 
-        # 仅分析结果摘要（Issue #262）：true 时只推送汇总，不含个股详情
+        # Summary-only mode (Issue #262): when true, push aggregate summary only, no per-stock details
         self._report_summary_only = getattr(config, 'report_summary_only', False)
         self._history_compare_cache: Dict[Tuple[int, Tuple[Tuple[str, str], ...]], Dict[str, List[Dict[str, Any]]]] = {}
 
-        # 初始化各渠道
+        # Initialize each channel
         AstrbotSender.__init__(self, config)
         CustomWebhookSender.__init__(self, config)
         DiscordSender.__init__(self, config)
@@ -160,17 +160,17 @@ class NotificationService(
         TelegramSender.__init__(self, config)
         WechatSender.__init__(self, config)
 
-        # 检测所有已配置的渠道
+        # Detect all configured channels
         self._available_channels = self._detect_all_channels()
         if self._has_context_channel():
-            self._context_channels.append("钉钉会话")
+            self._context_channels.append("DingTalk session")
 
         if not self._available_channels and not self._context_channels:
-            logger.warning("未配置有效的通知渠道，将不发送推送通知")
+            logger.warning("No valid notification channels configured; push notifications will not be sent")
         else:
             channel_names = [ChannelDetector.get_channel_name(ch) for ch in self._available_channels]
             channel_names.extend(self._context_channels)
-            logger.info(f"已配置 {len(channel_names)} 个通知渠道：{', '.join(channel_names)}")
+            logger.info(f"{len(channel_names)} notification channel(s) configured: {', '.join(channel_names)}")
 
     def _normalize_report_type(self, report_type: Any) -> ReportType:
         """Normalize string/enum input into ReportType."""
@@ -258,29 +258,29 @@ class NotificationService(
     
     def _detect_all_channels(self) -> List[NotificationChannel]:
         """
-        检测所有已配置的渠道
-        
+        Detect all configured channels
+
         Returns:
-            已配置的渠道列表
+            List of configured channels
         """
         channels = []
-        
-        # 企业微信
+
+        # WeCom
         if self._wechat_url:
             channels.append(NotificationChannel.WECHAT)
-        
-        # 飞书
+
+        # Feishu
         if self._feishu_url:
             channels.append(NotificationChannel.FEISHU)
-        
+
         # Telegram
         if self._is_telegram_configured():
             channels.append(NotificationChannel.TELEGRAM)
-        
-        # 邮件
+
+        # Email
         if self._is_email_configured():
             channels.append(NotificationChannel.EMAIL)
-        
+
         # Pushover
         if self._is_pushover_configured():
             channels.append(NotificationChannel.PUSHOVER)
@@ -289,11 +289,11 @@ class NotificationService(
         if self._pushplus_token:
             channels.append(NotificationChannel.PUSHPLUS)
 
-       # Server酱3
+       # ServerChan3
         if self._serverchan3_sendkey:
             channels.append(NotificationChannel.SERVERCHAN3)
-       
-        # 自定义 Webhook
+
+        # Custom Webhook
         if self._custom_webhook_urls:
             channels.append(NotificationChannel.CUSTOM)
         
@@ -309,30 +309,30 @@ class NotificationService(
         return channels
 
     def is_available(self) -> bool:
-        """检查通知服务是否可用（至少有一个渠道或上下文渠道）"""
+        """Check whether the notification service is available (at least one channel or context channel)"""
         return len(self._available_channels) > 0 or self._has_context_channel()
-    
+
     def get_available_channels(self) -> List[NotificationChannel]:
-        """获取所有已配置的渠道"""
+        """Get all configured channels"""
         return self._available_channels
-    
+
     def get_channel_names(self) -> str:
-        """获取所有已配置渠道的名称"""
+        """Get the display names of all configured channels"""
         names = [ChannelDetector.get_channel_name(ch) for ch in self._available_channels]
         if self._has_context_channel():
-            names.append("钉钉会话")
+            names.append("DingTalk session")
         return ', '.join(names)
 
     # ===== Context channel =====
     def _has_context_channel(self) -> bool:
-        """判断是否存在基于消息上下文的临时渠道（如钉钉会话、飞书会话）"""
+        """Check whether a message-context-based temporary channel exists (e.g. DingTalk session, Feishu session)"""
         return (
             self._extract_dingtalk_session_webhook() is not None
             or self._extract_feishu_reply_info() is not None
         )
 
     def _extract_dingtalk_session_webhook(self) -> Optional[str]:
-        """从来源消息中提取钉钉会话 Webhook（用于 Stream 模式回复）"""
+        """Extract the DingTalk session Webhook from the source message (for Stream mode reply)"""
         if not isinstance(self._source_message, BotMessage):
             return None
         raw_data = getattr(self._source_message, "raw_data", {}) or {}
@@ -350,10 +350,10 @@ class NotificationService(
 
     def _extract_feishu_reply_info(self) -> Optional[Dict[str, str]]:
         """
-        从来源消息中提取飞书回复信息（用于 Stream 模式回复）
-        
+        Extract Feishu reply information from the source message (for Stream mode reply)
+
         Returns:
-            包含 chat_id 的字典，或 None
+            A dict containing chat_id, or None
         """
         if not isinstance(self._source_message, BotMessage):
             return None
@@ -366,78 +366,79 @@ class NotificationService(
 
     def send_to_context(self, content: str) -> bool:
         """
-        向基于消息上下文的渠道发送消息（例如钉钉 Stream 会话）
-        
+        Send a message to message-context-based channels (e.g. DingTalk Stream session)
+
         Args:
-            content: Markdown 格式内容
+            content: Markdown formatted content
         """
         return self._send_via_source_context(content)
     
     def _send_via_source_context(self, content: str) -> bool:
         """
-        使用消息上下文（如钉钉/飞书会话）发送一份报告
-        
-        主要用于从机器人 Stream 模式触发的任务，确保结果能回到触发的会话。
+        Send a report using the message context (e.g. DingTalk/Feishu session)
+
+        Primarily used for tasks triggered via bot Stream mode to ensure results
+        are delivered back to the triggering session.
         """
         success = False
-        
-        # 尝试钉钉会话
+
+        # Try DingTalk session
         session_webhook = self._extract_dingtalk_session_webhook()
         if session_webhook:
             try:
                 if self._send_dingtalk_chunked(session_webhook, content, max_bytes=20000):
-                    logger.info("已通过钉钉会话（Stream）推送报告")
+                    logger.info("Report pushed via DingTalk session (Stream)")
                     success = True
                 else:
-                    logger.error("钉钉会话（Stream）推送失败")
+                    logger.error("DingTalk session (Stream) push failed")
             except Exception as e:
-                logger.error(f"钉钉会话（Stream）推送异常: {e}")
+                logger.error(f"DingTalk session (Stream) push exception: {e}")
 
-        # 尝试飞书会话
+        # Try Feishu session
         feishu_info = self._extract_feishu_reply_info()
         if feishu_info:
             try:
                 if self._send_feishu_stream_reply(feishu_info["chat_id"], content):
-                    logger.info("已通过飞书会话（Stream）推送报告")
+                    logger.info("Report pushed via Feishu session (Stream)")
                     success = True
                 else:
-                    logger.error("飞书会话（Stream）推送失败")
+                    logger.error("Feishu session (Stream) push failed")
             except Exception as e:
-                logger.error(f"飞书会话（Stream）推送异常: {e}")
+                logger.error(f"Feishu session (Stream) push exception: {e}")
 
         return success
 
     def _send_feishu_stream_reply(self, chat_id: str, content: str) -> bool:
         """
-        通过飞书 Stream 模式发送消息到指定会话
-        
+        Send a message to the specified Feishu session via Stream mode
+
         Args:
-            chat_id: 飞书会话 ID
-            content: 消息内容
-            
+            chat_id: Feishu session ID
+            content: Message content
+
         Returns:
-            是否发送成功
+            Whether the message was sent successfully
         """
         try:
             from bot.platforms.feishu_stream import FeishuReplyClient, FEISHU_SDK_AVAILABLE
             if not FEISHU_SDK_AVAILABLE:
-                logger.warning("飞书 SDK 不可用，无法发送 Stream 回复")
+                logger.warning("Feishu SDK unavailable; cannot send Stream reply")
                 return False
-            
+
             from src.config import get_config
             config = get_config()
-            
+
             app_id = getattr(config, 'feishu_app_id', None)
             app_secret = getattr(config, 'feishu_app_secret', None)
-            
+
             if not app_id or not app_secret:
-                logger.warning("飞书 APP_ID 或 APP_SECRET 未配置")
+                logger.warning("Feishu APP_ID or APP_SECRET not configured")
                 return False
-            
-            # 创建回复客户端
+
+            # Create reply client
             reply_client = FeishuReplyClient(app_id, app_secret)
-            
-            # 飞书文本消息有长度限制，需要分批发送
+
+            # Feishu text messages have a length limit; send in chunks
             max_bytes = getattr(config, 'feishu_max_bytes', 20000)
             content_bytes = len(content.encode('utf-8'))
             
@@ -447,37 +448,37 @@ class NotificationService(
             return reply_client.send_to_chat(chat_id, content)
             
         except ImportError as e:
-            logger.error(f"导入飞书 Stream 模块失败: {e}")
+            logger.error(f"Failed to import Feishu Stream module: {e}")
             return False
         except Exception as e:
-            logger.error(f"飞书 Stream 回复异常: {e}")
+            logger.error(f"Feishu Stream reply exception: {e}")
             return False
 
     def _send_feishu_stream_chunked(
-        self, 
-        reply_client, 
-        chat_id: str, 
-        content: str, 
+        self,
+        reply_client,
+        chat_id: str,
+        content: str,
         max_bytes: int
     ) -> bool:
         """
-        分批发送长消息到飞书（Stream 模式）
-        
+        Send a long message to Feishu in chunks (Stream mode)
+
         Args:
-            reply_client: FeishuReplyClient 实例
-            chat_id: 飞书会话 ID
-            content: 完整消息内容
-            max_bytes: 单条消息最大字节数
-            
+            reply_client: FeishuReplyClient instance
+            chat_id: Feishu session ID
+            content: Full message content
+            max_bytes: Maximum bytes per single message
+
         Returns:
-            是否全部发送成功
+            Whether all chunks were sent successfully
         """
         import time
         
         def get_bytes(s: str) -> int:
             return len(s.encode('utf-8'))
         
-        # 按段落或分隔线分割
+        # Split by paragraph or separator line
         if "\n---\n" in content:
             sections = content.split("\n---\n")
             separator = "\n---\n"
@@ -486,7 +487,7 @@ class NotificationService(
             sections = [parts[0]] + [f"### {p}" for p in parts[1:]]
             separator = "\n"
         else:
-            # 按行分割
+            # Split by line
             sections = content.split("\n")
             separator = "\n"
         
@@ -510,15 +511,15 @@ class NotificationService(
         if current_chunk:
             chunks.append(separator.join(current_chunk))
         
-        # 发送每个分块
+        # Send each chunk
         success = True
         for i, chunk in enumerate(chunks):
             if i > 0:
-                time.sleep(0.5)  # 避免请求过快
-            
+                time.sleep(0.5)  # Avoid sending too fast
+
             if not reply_client.send_to_chat(chat_id, chunk):
                 success = False
-                logger.error(f"飞书 Stream 分块 {i+1}/{len(chunks)} 发送失败")
+                logger.error(f"Feishu Stream chunk {i+1}/{len(chunks)} send failed")
         
         return success
         
@@ -528,21 +529,21 @@ class NotificationService(
         report_date: Optional[str] = None
     ) -> str:
         """
-        生成 Markdown 格式的日报（详细版）
+        Generate a Markdown daily report (detailed version)
 
         Args:
-            results: 分析结果列表
-            report_date: 报告日期（默认今天）
+            results: List of analysis results
+            report_date: Report date (default: today)
 
         Returns:
-            Markdown 格式的日报内容
+            Markdown formatted daily report content
         """
         if report_date is None:
             report_date = datetime.now().strftime('%Y-%m-%d')
         report_language = self._get_report_language(results)
         labels = get_report_labels(report_language)
 
-        # 标题
+        # Title
         report_lines = [
             f"# 📅 {report_date} {labels['report_title']}",
             "",
@@ -553,14 +554,14 @@ class NotificationService(
             "",
         ]
         
-        # 按评分排序（高分在前）
+        # Sort by score (highest first)
         sorted_results = sorted(
-            results, 
-            key=lambda x: x.sentiment_score, 
+            results,
+            key=lambda x: x.sentiment_score,
             reverse=True
         )
-        
-        # 统计信息 - 使用 decision_type 字段准确统计
+
+        # Statistics - use decision_type field for accurate counts
         buy_count = sum(1 for r in results if getattr(r, 'decision_type', '') == 'buy')
         sell_count = sum(1 for r in results if getattr(r, 'decision_type', '') == 'sell')
         hold_count = sum(1 for r in results if getattr(r, 'decision_type', '') in ('hold', ''))
@@ -569,7 +570,7 @@ class NotificationService(
         report_lines.extend([
             f"## 📊 {labels['summary_heading']}",
             "",
-            "| 指标 | 数值 |",
+            "| Metric | Value |",
             "|------|------|",
             f"| 🟢 {labels['buy_label']} | **{buy_count}** {labels['stock_unit_compact']} |",
             f"| 🟡 {labels['watch_label']} | **{hold_count}** {labels['stock_unit_compact']} |",
@@ -580,7 +581,7 @@ class NotificationService(
             "",
         ])
         
-        # Issue #262: summary_only 时仅输出摘要，跳过个股详情
+        # Issue #262: when summary_only, output only the aggregate summary and skip per-stock details
         if self._report_summary_only:
             report_lines.extend([f"## 📊 {labels['summary_heading']}", ""])
             for r in sorted_results:
@@ -593,7 +594,7 @@ class NotificationService(
                 )
         else:
             report_lines.extend([f"## 📈 {labels['report_title']}", ""])
-            # 逐个股票的详细分析
+            # Detailed analysis for each stock
             for result in sorted_results:
                 _, emoji, _ = self._get_signal_level(result)
                 confidence_stars = result.get_confidence_stars() if hasattr(result, 'get_confidence_stars') else '⭐⭐'
@@ -610,114 +611,114 @@ class NotificationService(
 
                 self._append_market_snapshot(report_lines, result)
                 
-                # 核心看点
+                # Key highlights
                 if hasattr(result, 'key_points') and result.key_points:
                     report_lines.extend([
-                        f"**🎯 核心看点**：{result.key_points}",
+                        f"**🎯 Key Highlights**: {result.key_points}",
                         "",
                     ])
-                
-                # 买入/卖出理由
+
+                # Buy/sell rationale
                 if hasattr(result, 'buy_reason') and result.buy_reason:
                     report_lines.extend([
-                        f"**💡 操作理由**：{result.buy_reason}",
+                        f"**💡 Rationale**: {result.buy_reason}",
                         "",
                     ])
-                
-                # 走势分析
+
+                # Trend analysis
                 if hasattr(result, 'trend_analysis') and result.trend_analysis:
                     report_lines.extend([
-                        "#### 📉 走势分析",
+                        "#### 📉 Trend Analysis",
                         f"{result.trend_analysis}",
                         "",
                     ])
-                
-                # 短期/中期展望
+
+                # Short-term / medium-term outlook
                 outlook_lines = []
                 if hasattr(result, 'short_term_outlook') and result.short_term_outlook:
-                    outlook_lines.append(f"- **短期（1-3日）**：{result.short_term_outlook}")
+                    outlook_lines.append(f"- **Short-term (1-3 days)**: {result.short_term_outlook}")
                 if hasattr(result, 'medium_term_outlook') and result.medium_term_outlook:
-                    outlook_lines.append(f"- **中期（1-2周）**：{result.medium_term_outlook}")
+                    outlook_lines.append(f"- **Medium-term (1-2 weeks)**: {result.medium_term_outlook}")
                 if outlook_lines:
                     report_lines.extend([
-                        "#### 🔮 市场展望",
+                        "#### 🔮 Market Outlook",
                         *outlook_lines,
                         "",
                     ])
-                
-                # 技术面分析
+
+                # Technical analysis
                 tech_lines = []
                 if result.technical_analysis:
-                    tech_lines.append(f"**综合**：{result.technical_analysis}")
+                    tech_lines.append(f"**Overall**: {result.technical_analysis}")
                 if hasattr(result, 'ma_analysis') and result.ma_analysis:
-                    tech_lines.append(f"**均线**：{result.ma_analysis}")
+                    tech_lines.append(f"**Moving Averages**: {result.ma_analysis}")
                 if hasattr(result, 'volume_analysis') and result.volume_analysis:
-                    tech_lines.append(f"**量能**：{result.volume_analysis}")
+                    tech_lines.append(f"**Volume**: {result.volume_analysis}")
                 if hasattr(result, 'pattern_analysis') and result.pattern_analysis:
-                    tech_lines.append(f"**形态**：{result.pattern_analysis}")
+                    tech_lines.append(f"**Pattern**: {result.pattern_analysis}")
                 if tech_lines:
                     report_lines.extend([
-                        "#### 📊 技术面分析",
+                        "#### 📊 Technical Analysis",
                         *tech_lines,
                         "",
                     ])
-                
-                # 基本面分析
+
+                # Fundamental analysis
                 fund_lines = []
                 if hasattr(result, 'fundamental_analysis') and result.fundamental_analysis:
                     fund_lines.append(result.fundamental_analysis)
                 if hasattr(result, 'sector_position') and result.sector_position:
-                    fund_lines.append(f"**板块地位**：{result.sector_position}")
+                    fund_lines.append(f"**Sector Position**: {result.sector_position}")
                 if hasattr(result, 'company_highlights') and result.company_highlights:
-                    fund_lines.append(f"**公司亮点**：{result.company_highlights}")
+                    fund_lines.append(f"**Company Highlights**: {result.company_highlights}")
                 if fund_lines:
                     report_lines.extend([
-                        "#### 🏢 基本面分析",
+                        "#### 🏢 Fundamental Analysis",
                         *fund_lines,
                         "",
                     ])
-                
-                # 消息面/情绪面
+
+                # News / sentiment
                 news_lines = []
                 if result.news_summary:
-                    news_lines.append(f"**新闻摘要**：{result.news_summary}")
+                    news_lines.append(f"**News Summary**: {result.news_summary}")
                 if hasattr(result, 'market_sentiment') and result.market_sentiment:
-                    news_lines.append(f"**市场情绪**：{result.market_sentiment}")
+                    news_lines.append(f"**Market Sentiment**: {result.market_sentiment}")
                 if hasattr(result, 'hot_topics') and result.hot_topics:
-                    news_lines.append(f"**相关热点**：{result.hot_topics}")
+                    news_lines.append(f"**Hot Topics**: {result.hot_topics}")
                 if news_lines:
                     report_lines.extend([
-                        "#### 📰 消息面/情绪面",
+                        "#### 📰 News / Sentiment",
                         *news_lines,
                         "",
                     ])
-                
-                # 综合分析
+
+                # Overall analysis
                 if result.analysis_summary:
                     report_lines.extend([
-                        "#### 📝 综合分析",
+                        "#### 📝 Overall Analysis",
                         result.analysis_summary,
                         "",
                     ])
-                
-                # 风险提示
+
+                # Risk warning
                 if hasattr(result, 'risk_warning') and result.risk_warning:
                     report_lines.extend([
-                        f"⚠️ **风险提示**：{result.risk_warning}",
+                        f"⚠️ **Risk Warning**: {result.risk_warning}",
                         "",
                     ])
-                
-                # 数据来源说明
+
+                # Data source notes
                 if hasattr(result, 'search_performed') and result.search_performed:
-                    report_lines.append("*🔍 已执行联网搜索*")
+                    report_lines.append("*🔍 Web search was performed*")
                 if hasattr(result, 'data_sources') and result.data_sources:
-                    report_lines.append(f"*📋 数据来源：{result.data_sources}*")
-                
-                # 错误信息（如果有）
+                    report_lines.append(f"*📋 Data sources: {result.data_sources}*")
+
+                # Error message (if any)
                 if not result.success and result.error_message:
                     report_lines.extend([
                         "",
-                        f"❌ **分析异常**：{result.error_message[:100]}",
+                        f"❌ **Analysis Error**: {result.error_message[:100]}",
                     ])
                 
                 report_lines.extend([
@@ -726,14 +727,14 @@ class NotificationService(
                     "",
                 ])
         
-        # 底部信息（去除免责声明）
+        # Footer (disclaimer removed)
         report_lines.extend([
             "",
             f"*{labels['generated_at_label']}：{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}*",
         ])
-        
+
         return "\n".join(report_lines)
-    
+
     @staticmethod
     def _escape_md(name: str) -> str:
         """Escape markdown special characters in stock names (e.g. *ST → \\*ST)."""
@@ -772,26 +773,26 @@ class NotificationService(
         report_date: Optional[str] = None
     ) -> str:
         """
-        生成决策仪表盘格式的日报（详细版）
+        Generate a decision dashboard daily report (detailed version)
 
-        格式：市场概览 + 重要信息 + 核心结论 + 数据透视 + 作战计划
+        Format: Market overview + Key info + Core conclusion + Data perspective + Battle plan
 
         Args:
-            results: 分析结果列表
-            report_date: 报告日期（默认今天）
+            results: List of analysis results
+            report_date: Report date (default: today)
 
         Returns:
-            Markdown 格式的决策仪表盘日报
+            Markdown formatted decision dashboard daily report
         """
         config = get_config()
         report_language = self._get_report_language(results)
         labels = get_report_labels(report_language)
-        reason_label = "Rationale" if report_language == "en" else "操作理由"
-        risk_warning_label = "Risk Warning" if report_language == "en" else "风险提示"
-        technical_heading = "Technicals" if report_language == "en" else "技术面"
-        ma_label = "Moving Averages" if report_language == "en" else "均线"
-        volume_analysis_label = "Volume" if report_language == "en" else "量能"
-        news_heading = "News Flow" if report_language == "en" else "消息面"
+        reason_label = "Rationale" if report_language == "en" else "Rationale"
+        risk_warning_label = "Risk Warning" if report_language == "en" else "Risk Warning"
+        technical_heading = "Technicals" if report_language == "en" else "Technicals"
+        ma_label = "Moving Averages" if report_language == "en" else "Moving Averages"
+        volume_analysis_label = "Volume" if report_language == "en" else "Volume"
+        news_heading = "News Flow" if report_language == "en" else "News Flow"
         if getattr(config, 'report_renderer_enabled', False) and results:
             from src.services.report_renderer import render
             out = render(
@@ -810,10 +811,10 @@ class NotificationService(
         if report_date is None:
             report_date = datetime.now().strftime('%Y-%m-%d')
 
-        # 按评分排序（高分在前）
+        # Sort by score (highest first)
         sorted_results = sorted(results, key=lambda x: x.sentiment_score, reverse=True)
 
-        # 统计信息 - 使用 decision_type 字段准确统计
+        # Statistics - use decision_type field for accurate counts
         buy_count = sum(1 for r in results if getattr(r, 'decision_type', '') == 'buy')
         sell_count = sum(1 for r in results if getattr(r, 'decision_type', '') == 'sell')
         hold_count = sum(1 for r in results if getattr(r, 'decision_type', '') in ('hold', ''))
@@ -826,7 +827,7 @@ class NotificationService(
             "",
         ]
 
-        # === 新增：分析结果摘要 (Issue #112) ===
+        # === Added: analysis result summary (Issue #112) ===
         if results:
             report_lines.extend([
                 f"## 📊 {labels['summary_heading']}",
@@ -847,13 +848,13 @@ class NotificationService(
                 "",
             ])
 
-        # 逐个股票的决策仪表盘（Issue #262: summary_only 时跳过详情）
+        # Per-stock decision dashboard (Issue #262: skip details when summary_only)
         if not self._report_summary_only:
             for result in sorted_results:
                 signal_text, signal_emoji, signal_tag = self._get_signal_level(result)
                 dashboard = result.dashboard if hasattr(result, 'dashboard') and result.dashboard else {}
-                
-                # 股票名称（优先使用 dashboard 或 result 中的名称，转义 *ST 等特殊字符）
+
+                # Stock name (prefer dashboard or result name; escape *ST and similar special chars)
                 stock_name = self._get_display_name(result, report_language)
                 
                 report_lines.extend([
@@ -861,40 +862,40 @@ class NotificationService(
                     "",
                 ])
                 
-                # ========== 舆情与基本面概览（放在最前面）==========
+                # ========== Sentiment & fundamentals overview (shown first) ==========
                 intel = dashboard.get('intelligence', {}) if dashboard else {}
                 if intel:
                     report_lines.extend([
                         f"### 📰 {labels['info_heading']}",
                         "",
                     ])
-                    # 舆情情绪总结
+                    # Sentiment summary
                     if intel.get('sentiment_summary'):
                         report_lines.append(f"**💭 {labels['sentiment_summary_label']}**: {intel['sentiment_summary']}")
-                    # 业绩预期
+                    # Earnings outlook
                     if intel.get('earnings_outlook'):
                         report_lines.append(f"**📊 {labels['earnings_outlook_label']}**: {intel['earnings_outlook']}")
-                    # 风险警报（醒目显示）
+                    # Risk alerts (highlighted prominently)
                     risk_alerts = intel.get('risk_alerts', [])
                     if risk_alerts:
                         report_lines.append("")
                         report_lines.append(f"**🚨 {labels['risk_alerts_label']}**:")
                         for alert in risk_alerts:
                             report_lines.append(f"- {alert}")
-                    # 利好催化
+                    # Positive catalysts
                     catalysts = intel.get('positive_catalysts', [])
                     if catalysts:
                         report_lines.append("")
                         report_lines.append(f"**✨ {labels['positive_catalysts_label']}**:")
                         for cat in catalysts:
                             report_lines.append(f"- {cat}")
-                    # 最新消息
+                    # Latest news
                     if intel.get('latest_news'):
                         report_lines.append("")
                         report_lines.append(f"**📢 {labels['latest_news_label']}**: {intel['latest_news']}")
                     report_lines.append("")
-                
-                # ========== 核心结论 ==========
+
+                # ========== Core conclusion ==========
                 core = dashboard.get('core_conclusion', {}) if dashboard else {}
                 one_sentence = core.get('one_sentence', result.analysis_summary)
                 time_sense = core.get('time_sensitivity', labels['default_time_sensitivity'])
@@ -910,7 +911,7 @@ class NotificationService(
                     f"⏰ **{labels['time_sensitivity_label']}**: {time_sense}",
                     "",
                 ])
-                # 持仓分类建议
+                # Position classification advice
                 if pos_advice:
                     report_lines.extend([
                         f"| {labels['position_status_label']} | {labels['action_advice_label']} |",
@@ -922,19 +923,19 @@ class NotificationService(
 
                 self._append_market_snapshot(report_lines, result)
                 
-                # ========== 数据透视 ==========
+                # ========== Data perspective ==========
                 data_persp = dashboard.get('data_perspective', {}) if dashboard else {}
                 if data_persp:
                     trend_data = data_persp.get('trend_status', {})
                     price_data = data_persp.get('price_position', {})
                     vol_data = data_persp.get('volume_analysis', {})
                     chip_data = data_persp.get('chip_structure', {})
-                    
+
                     report_lines.extend([
                         f"### 📊 {labels['data_perspective_heading']}",
                         "",
                     ])
-                    # 趋势状态
+                    # Trend status
                     if trend_data:
                         is_bullish = (
                             f"✅ {labels['yes_label']}"
@@ -947,7 +948,7 @@ class NotificationService(
                             f"{labels['trend_strength_label']}: {trend_data.get('trend_score', 'N/A')}/100",
                             "",
                         ])
-                    # 价格位置
+                    # Price position
                     if price_data:
                         bias_status = price_data.get('bias_status', 'N/A')
                         report_lines.extend([
@@ -962,7 +963,7 @@ class NotificationService(
                             f"| {labels['resistance_level_label']} | {price_data.get('resistance_level', 'N/A')} |",
                             "",
                         ])
-                    # 量能分析
+                    # Volume analysis
                     if vol_data:
                         report_lines.extend([
                             f"**{labels['volume_label']}**: {labels['volume_ratio_label']} {vol_data.get('volume_ratio', 'N/A')} ({vol_data.get('volume_status', '')}) | "
@@ -970,7 +971,7 @@ class NotificationService(
                             f"💡 *{vol_data.get('volume_meaning', '')}*",
                             "",
                         ])
-                    # 筹码结构
+                    # Chip structure
                     if chip_data:
                         chip_health = localize_chip_health(chip_data.get('chip_health', 'N/A'), report_language)
                         report_lines.extend([
@@ -979,14 +980,14 @@ class NotificationService(
                             "",
                         ])
                 
-                # ========== 作战计划 ==========
+                # ========== Battle plan ==========
                 battle = dashboard.get('battle_plan', {}) if dashboard else {}
                 if battle:
                     report_lines.extend([
                         f"### 🎯 {labels['battle_plan_heading']}",
                         "",
                     ])
-                    # 狙击点位
+                    # Sniper points
                     sniper = battle.get('sniper_points', {})
                     if sniper:
                         report_lines.extend([
@@ -1000,7 +1001,7 @@ class NotificationService(
                             f"| 🎊 {labels['take_profit_label']} | {self._clean_sniper_value(sniper.get('take_profit', 'N/A'))} |",
                             "",
                         ])
-                    # 仓位策略
+                    # Position strategy
                     position = battle.get('position_strategy', {})
                     if position:
                         report_lines.extend([
@@ -1009,7 +1010,7 @@ class NotificationService(
                             f"- {labels['risk_control_label']}: {position.get('risk_control', 'N/A')}",
                             "",
                         ])
-                    # 检查清单
+                    # Action checklist
                     checklist = battle.get('action_checklist', []) if battle else []
                     if checklist:
                         report_lines.extend([
@@ -1020,21 +1021,21 @@ class NotificationService(
                             report_lines.append(f"- {item}")
                         report_lines.append("")
                 
-                # 如果没有 dashboard，显示传统格式
+                # If no dashboard, fall back to traditional format
                 if not dashboard:
-                    # 操作理由
+                    # Rationale
                     if result.buy_reason:
                         report_lines.extend([
                             f"**💡 {reason_label}**: {result.buy_reason}",
                             "",
                         ])
-                    # 风险提示
+                    # Risk warning
                     if result.risk_warning:
                         report_lines.extend([
                             f"**⚠️ {risk_warning_label}**: {result.risk_warning}",
                             "",
                         ])
-                    # 技术面分析
+                    # Technical analysis
                     if result.ma_analysis or result.volume_analysis:
                         report_lines.extend([
                             f"### 📊 {technical_heading}",
@@ -1045,7 +1046,7 @@ class NotificationService(
                         if result.volume_analysis:
                             report_lines.append(f"**{volume_analysis_label}**: {result.volume_analysis}")
                         report_lines.append("")
-                    # 消息面
+                    # News
                     if result.news_summary:
                         report_lines.extend([
                             f"### 📰 {news_heading}",
@@ -1058,25 +1059,25 @@ class NotificationService(
                     "",
                 ])
         
-        # 底部（去除免责声明）
+        # Footer (disclaimer removed)
         report_lines.extend([
             "",
             f"*{labels['generated_at_label']}：{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}*",
         ])
-        
+
         return "\n".join(report_lines)
-    
+
     def generate_wechat_dashboard(self, results: List[AnalysisResult]) -> str:
         """
-        生成企业微信决策仪表盘精简版（控制在4000字符内）
-        
-        只保留核心结论和狙击点位
-        
+        Generate a compact WeCom decision dashboard (under 4000 characters)
+
+        Retains only the core conclusion and sniper points
+
         Args:
-            results: 分析结果列表
-            
+            results: List of analysis results
+
         Returns:
-            精简版决策仪表盘
+            Compact decision dashboard
         """
         config = get_config()
         report_language = self._get_report_language(results)
@@ -1095,14 +1096,14 @@ class NotificationService(
 
         report_date = datetime.now().strftime('%Y-%m-%d')
         
-        # 按评分排序
+        # Sort by score (highest first)
         sorted_results = sorted(results, key=lambda x: x.sentiment_score, reverse=True)
-        
-        # 统计 - 使用 decision_type 字段准确统计
+
+        # Statistics - use decision_type field for accurate counts
         buy_count = sum(1 for r in results if getattr(r, 'decision_type', '') == 'buy')
         sell_count = sum(1 for r in results if getattr(r, 'decision_type', '') == 'sell')
         hold_count = sum(1 for r in results if getattr(r, 'decision_type', '') in ('hold', ''))
-        
+
         lines = [
             f"## 🎯 {report_date} {labels['dashboard_title']}",
             "",
@@ -1111,7 +1112,7 @@ class NotificationService(
             "",
         ]
         
-        # Issue #262: summary_only 时仅输出摘要列表
+        # Issue #262: when summary_only, output only the aggregate summary list
         if self._report_summary_only:
             lines.append(f"**📊 {labels['summary_heading']}**")
             lines.append("")
@@ -1132,23 +1133,23 @@ class NotificationService(
                 battle = dashboard.get('battle_plan', {}) if dashboard else {}
                 intel = dashboard.get('intelligence', {}) if dashboard else {}
                 
-                # 股票名称
+                # Stock name
                 stock_name = self._get_display_name(result, report_language)
-                
-                # 标题行：信号等级 + 股票名称
+
+                # Title row: signal level + stock name
                 lines.append(f"### {signal_emoji} **{signal_text}** | {stock_name}({result.code})")
                 lines.append("")
                 
-                # 核心决策（一句话）
+                # Core decision (one sentence)
                 one_sentence = core.get('one_sentence', result.analysis_summary) if core else result.analysis_summary
                 if one_sentence:
                     lines.append(f"📌 **{one_sentence[:80]}**")
                     lines.append("")
-                
-                # 重要信息区（舆情+基本面）
+
+                # Key information area (sentiment + fundamentals)
                 info_lines = []
-                
-                # 业绩预期
+
+                # Earnings outlook
                 if intel.get('earnings_outlook'):
                     outlook = str(intel['earnings_outlook'])[:60]
                     info_lines.append(f"📊 {labels['earnings_outlook_label']}: {outlook}")
@@ -1158,28 +1159,28 @@ class NotificationService(
                 if info_lines:
                     lines.extend(info_lines)
                     lines.append("")
-                
-                # 风险警报（最重要，醒目显示）
+
+                # Risk alerts (most important, shown prominently)
                 risks = intel.get('risk_alerts', []) if intel else []
                 if risks:
                     lines.append(f"🚨 **{labels['risk_alerts_label']}**:")
-                    for risk in risks[:2]:  # 最多显示2条
+                    for risk in risks[:2]:  # Show at most 2 items
                         risk_str = str(risk)
                         risk_text = risk_str[:50] + "..." if len(risk_str) > 50 else risk_str
                         lines.append(f"   • {risk_text}")
                     lines.append("")
                 
-                # 利好催化
+                # Positive catalysts
                 catalysts = intel.get('positive_catalysts', []) if intel else []
                 if catalysts:
                     lines.append(f"✨ **{labels['positive_catalysts_label']}**:")
-                    for cat in catalysts[:2]:  # 最多显示2条
+                    for cat in catalysts[:2]:  # Show at most 2 items
                         cat_str = str(cat)
                         cat_text = cat_str[:50] + "..." if len(cat_str) > 50 else cat_str
                         lines.append(f"   • {cat_text}")
                     lines.append("")
                 
-                # 狙击点位
+                # Sniper points
                 sniper = battle.get('sniper_points', {}) if battle else {}
                 if sniper:
                     ideal_buy = str(sniper.get('ideal_buy', ''))
@@ -1196,7 +1197,7 @@ class NotificationService(
                         lines.append(" | ".join(points))
                         lines.append("")
                 
-                # 持仓建议
+                # Position advice
                 pos_advice = core.get('position_advice', {}) if core else {}
                 if pos_advice:
                     no_pos = str(pos_advice.get('no_position', ''))
@@ -1207,10 +1208,10 @@ class NotificationService(
                         lines.append(f"💼 {labels['has_position_label']}: {has_pos[:50]}")
                     lines.append("")
                 
-                # 检查清单简化版
+                # Simplified checklist
                 checklist = battle.get('action_checklist', []) if battle else []
                 if checklist:
-                    # 只显示不通过的项目
+                    # Show only failed items
                     failed_checks = [str(c) for c in checklist if str(c).startswith('❌') or str(c).startswith('⚠️')]
                     if failed_checks:
                         lines.append(f"**{labels['failed_checks_heading']}**:")
@@ -1221,7 +1222,7 @@ class NotificationService(
                 lines.append("---")
                 lines.append("")
         
-        # 底部
+        # Footer
         lines.append(f"*{labels['report_time_label']}: {datetime.now().strftime('%H:%M')}*")
         models = self._collect_models_used(results)
         if models:
@@ -1233,22 +1234,22 @@ class NotificationService(
 
     def generate_wechat_summary(self, results: List[AnalysisResult]) -> str:
         """
-        生成企业微信精简版日报（控制在4000字符内）
+        Generate a compact WeCom daily report (under 4000 characters)
 
         Args:
-            results: 分析结果列表
+            results: List of analysis results
 
         Returns:
-            精简版 Markdown 内容
+            Compact Markdown content
         """
         report_date = datetime.now().strftime('%Y-%m-%d')
         report_language = self._get_report_language(results)
         labels = get_report_labels(report_language)
 
-        # 按评分排序
+        # Sort by score (highest first)
         sorted_results = sorted(results, key=lambda x: x.sentiment_score, reverse=True)
 
-        # 统计 - 使用 decision_type 字段准确统计
+        # Statistics - use decision_type field for accurate counts
         buy_count = sum(1 for r in results if getattr(r, 'decision_type', '') == 'buy')
         sell_count = sum(1 for r in results if getattr(r, 'decision_type', '') == 'sell')
         hold_count = sum(1 for r in results if getattr(r, 'decision_type', '') in ('hold', ''))
@@ -1263,11 +1264,11 @@ class NotificationService(
             "",
         ]
         
-        # 每只股票精简信息（控制长度）
+        # Compact info for each stock (controlled length)
         for result in sorted_results:
             _, emoji, _ = self._get_signal_level(result)
-            
-            # 核心信息行
+
+            # Core info line
             lines.append(f"### {emoji} {self._get_display_name(result, report_language)}({result.code})")
             lines.append(
                 f"**{localize_operation_advice(result.operation_advice, report_language)}** | "
@@ -1275,24 +1276,24 @@ class NotificationService(
                 f"{localize_trend_prediction(result.trend_prediction, report_language)}"
             )
             
-            # 操作理由（截断）
+            # Rationale (truncated)
             if hasattr(result, 'buy_reason') and result.buy_reason:
                 reason = result.buy_reason[:80] + "..." if len(result.buy_reason) > 80 else result.buy_reason
                 lines.append(f"💡 {reason}")
-            
-            # 核心看点
+
+            # Key highlights
             if hasattr(result, 'key_points') and result.key_points:
                 points = result.key_points[:60] + "..." if len(result.key_points) > 60 else result.key_points
                 lines.append(f"🎯 {points}")
-            
-            # 风险提示（截断）
+
+            # Risk warning (truncated)
             if hasattr(result, 'risk_warning') and result.risk_warning:
                 risk = result.risk_warning[:50] + "..." if len(result.risk_warning) > 50 else result.risk_warning
                 lines.append(f"⚠️ {risk}")
             
             lines.append("")
         
-        # 底部（模型行在 --- 之前，Issue #528）
+        # Footer (model line before ---, Issue #528)
         models = self._collect_models_used(results)
         if models:
             lines.append(f"*{labels['analysis_model_label']}: {', '.join(models)}*")
@@ -1367,15 +1368,15 @@ class NotificationService(
 
     def generate_single_stock_report(self, result: AnalysisResult) -> str:
         """
-        生成单只股票的分析报告（用于单股推送模式 #55）
-        
-        格式精简但信息完整，适合每分析完一只股票立即推送
-        
+        Generate an analysis report for a single stock (for single-stock push mode #55)
+
+        Compact but complete format, suitable for immediate push after each stock is analyzed
+
         Args:
-            result: 单只股票的分析结果
-            
+            result: Analysis result for a single stock
+
         Returns:
-            Markdown 格式的单股报告
+            Markdown formatted single-stock report
         """
         report_date = datetime.now().strftime('%Y-%m-%d %H:%M')
         report_language = self._get_report_language(result)
@@ -1386,7 +1387,7 @@ class NotificationService(
         battle = dashboard.get('battle_plan', {}) if dashboard else {}
         intel = dashboard.get('intelligence', {}) if dashboard else {}
         
-        # 股票名称（转义 *ST 等特殊字符）
+        # Stock name (escape *ST and similar special characters)
         stock_name = self._get_display_name(result, report_language)
         
         lines = [
@@ -1398,7 +1399,7 @@ class NotificationService(
 
         self._append_market_snapshot(lines, result)
         
-        # 核心决策（一句话）
+        # Core decision (one sentence)
         one_sentence = core.get('one_sentence', result.analysis_summary) if core else result.analysis_summary
         if one_sentence:
             lines.extend([
@@ -1407,8 +1408,8 @@ class NotificationService(
                 f"**{signal_text}**: {one_sentence}",
                 "",
             ])
-        
-        # 重要信息（舆情+基本面）
+
+        # Key information (sentiment + fundamentals)
         info_added = False
         if intel:
             if intel.get('earnings_outlook'):
@@ -1425,7 +1426,7 @@ class NotificationService(
                     info_added = True
                 lines.append(f"💭 **{labels['sentiment_summary_label']}**: {str(intel['sentiment_summary'])[:80]}")
             
-            # 风险警报
+            # Risk alerts
             risks = intel.get('risk_alerts', [])
             if risks:
                 if not info_added:
@@ -1436,8 +1437,8 @@ class NotificationService(
                 lines.append(f"🚨 **{labels['risk_alerts_label']}**:")
                 for risk in risks[:3]:
                     lines.append(f"- {str(risk)[:60]}")
-            
-            # 利好催化
+
+            # Positive catalysts
             catalysts = intel.get('positive_catalysts', [])
             if catalysts:
                 lines.append("")
@@ -1448,7 +1449,7 @@ class NotificationService(
         if info_added:
             lines.append("")
         
-        # 狙击点位
+        # Sniper points
         sniper = battle.get('sniper_points', {}) if battle else {}
         if sniper:
             lines.extend([
@@ -1463,7 +1464,7 @@ class NotificationService(
             lines.append(f"| {ideal_buy} | {stop_loss} | {take_profit} |")
             lines.append("")
         
-        # 持仓建议
+        # Position advice
         pos_advice = core.get('position_advice', {}) if core else {}
         if pos_advice:
             lines.extend([
@@ -1547,7 +1548,7 @@ class NotificationService(
             return False
         if channel == NotificationChannel.WECHAT and len(image_bytes) > WECHAT_IMAGE_MAX_BYTES:
             logger.warning(
-                "企业微信图片超限 (%d bytes)，回退为 Markdown 文本发送",
+                "WeCom image exceeds size limit (%d bytes); falling back to Markdown text",
                 len(image_bytes),
             )
             return False
@@ -1560,9 +1561,9 @@ class NotificationService(
         email_send_to_all: bool = False
     ) -> bool:
         """
-        统一发送接口 - 向所有已配置的渠道发送
+        Unified send interface - send to all configured channels
 
-        遍历所有已配置的渠道，逐一发送消息
+        Iterates over all configured channels and sends the message one by one
 
         Fallback rules (Markdown-to-image, Issue #289):
         - When image_bytes is None (conversion failed / imgkit not installed /
@@ -1571,20 +1572,20 @@ class NotificationService(
         - When WeChat image exceeds ~2MB: that channel falls back to Markdown text.
 
         Args:
-            content: 消息内容（Markdown 格式）
-            email_stock_codes: 股票代码列表（可选，用于邮件渠道路由到对应分组邮箱，Issue #268）
-            email_send_to_all: 邮件是否发往所有配置邮箱（用于大盘复盘等无股票归属的内容）
+            content: Message content (Markdown format)
+            email_stock_codes: Stock code list (optional; used to route email to the corresponding group mailbox, Issue #268)
+            email_send_to_all: Whether to send email to all configured mailboxes (used for market review content without stock attribution)
 
         Returns:
-            是否至少有一个渠道发送成功
+            Whether at least one channel sent successfully
         """
         context_success = self.send_to_context(content)
 
         if not self._available_channels:
             if context_success:
-                logger.info("已通过消息上下文渠道完成推送（无其他通知渠道）")
+                logger.info("Push completed via message-context channel (no other notification channels)")
                 return True
-            logger.warning("通知服务不可用，跳过推送")
+            logger.warning("Notification service unavailable; skipping push")
             return False
 
         # Markdown to image (Issue #289): convert once if any channel needs it.
@@ -1600,7 +1601,7 @@ class NotificationService(
                 content, max_chars=self._markdown_to_image_max_chars
             )
             if image_bytes:
-                logger.info("Markdown 已转换为图片，将向 %s 发送图片",
+                logger.info("Markdown converted to image; sending image to %s",
                             [ch.value for ch in channels_needing_image])
             elif channels_needing_image:
                 try:
@@ -1613,12 +1614,12 @@ class NotificationService(
                     else "wkhtmltopdf (apt install wkhtmltopdf / brew install wkhtmltopdf)"
                 )
                 logger.warning(
-                    "Markdown 转图片失败，将回退为文本发送。请检查 MARKDOWN_TO_IMAGE_CHANNELS 配置并安装 %s",
+                    "Markdown to image conversion failed; falling back to text. Check MARKDOWN_TO_IMAGE_CHANNELS config and install %s",
                     hint,
                 )
 
         channel_names = self.get_channel_names()
-        logger.info(f"正在向 {len(self._available_channels)} 个渠道发送通知：{channel_names}")
+        logger.info(f"Sending notification to {len(self._available_channels)} channel(s): {channel_names}")
 
         success_count = 0
         fail_count = 0
@@ -1676,7 +1677,7 @@ class NotificationService(
                 elif channel == NotificationChannel.ASTRBOT:
                     result = self.send_to_astrbot(content)
                 else:
-                    logger.warning(f"不支持的通知渠道: {channel}")
+                    logger.warning(f"Unsupported notification channel: {channel}")
                     result = False
 
                 if result:
@@ -1685,26 +1686,26 @@ class NotificationService(
                     fail_count += 1
 
             except Exception as e:
-                logger.error(f"{channel_name} 发送失败: {e}")
+                logger.error(f"{channel_name} send failed: {e}")
                 fail_count += 1
 
-        logger.info(f"通知发送完成：成功 {success_count} 个，失败 {fail_count} 个")
+        logger.info(f"Notification send complete: {success_count} succeeded, {fail_count} failed")
         return success_count > 0 or context_success
    
     def save_report_to_file(
-        self, 
-        content: str, 
+        self,
+        content: str,
         filename: Optional[str] = None
     ) -> str:
         """
-        保存日报到本地文件
-        
+        Save the daily report to a local file
+
         Args:
-            content: 日报内容
-            filename: 文件名（可选，默认按日期生成）
-            
+            content: Report content
+            filename: File name (optional; defaults to a date-based name)
+
         Returns:
-            保存的文件路径
+            The saved file path
         """
         from pathlib import Path
         
@@ -1712,7 +1713,7 @@ class NotificationService(
             date_str = datetime.now().strftime('%Y%m%d')
             filename = f"report_{date_str}.md"
         
-        # 确保 reports 目录存在（使用项目根目录下的 reports）
+        # Ensure the reports directory exists (under the project root)
         reports_dir = Path(__file__).parent.parent / 'reports'
         reports_dir.mkdir(parents=True, exist_ok=True)
         
@@ -1721,15 +1722,15 @@ class NotificationService(
         with open(filepath, 'w', encoding='utf-8') as f:
             f.write(content)
         
-        logger.info(f"日报已保存到: {filepath}")
+        logger.info(f"Daily report saved to: {filepath}")
         return str(filepath)
 
 
 class NotificationBuilder:
     """
-    通知消息构建器
-    
-    提供便捷的消息构建方法
+    Notification message builder
+
+    Provides convenience methods for building messages
     """
     
     @staticmethod
@@ -1739,12 +1740,12 @@ class NotificationBuilder:
         alert_type: str = "info"
     ) -> str:
         """
-        构建简单的提醒消息
-        
+        Build a simple alert message
+
         Args:
-            title: 标题
-            content: 内容
-            alert_type: 类型（info, warning, error, success）
+            title: Title
+            content: Content
+            alert_type: Type (info, warning, error, success)
         """
         emoji_map = {
             "info": "ℹ️",
@@ -1759,9 +1760,9 @@ class NotificationBuilder:
     @staticmethod
     def build_stock_summary(results: List[AnalysisResult]) -> str:
         """
-        构建股票摘要（简短版）
-        
-        适用于快速通知
+        Build a stock summary (short version)
+
+        Suitable for quick notifications
         """
         report_language = normalize_report_language(
             next((getattr(result, "report_language", None) for result in results if getattr(result, "report_language", None)), None)
@@ -1780,90 +1781,90 @@ class NotificationBuilder:
         return "\n".join(lines)
 
 
-# 便捷函数
+# Convenience functions
 def get_notification_service() -> NotificationService:
-    """获取通知服务实例"""
+    """Get a NotificationService instance"""
     return NotificationService()
 
 
 def send_daily_report(results: List[AnalysisResult]) -> bool:
     """
-    发送每日报告的快捷方式
-    
-    自动识别渠道并推送
+    Shortcut for sending the daily report
+
+    Auto-detects channels and pushes
     """
     service = get_notification_service()
-    
-    # 生成报告
+
+    # Generate report
     report = service.generate_daily_report(results)
-    
-    # 保存到本地
+
+    # Save locally
     service.save_report_to_file(report)
-    
-    # 推送到配置的渠道（自动识别）
+
+    # Push to configured channels (auto-detected)
     return service.send(report)
 
 
 if __name__ == "__main__":
-    # 测试代码
+    # Test code
     logging.basicConfig(level=logging.DEBUG)
-    
-    # 模拟分析结果
+
+    # Simulated analysis results
     test_results = [
         AnalysisResult(
             code='600519',
-            name='贵州茅台',
+            name='Kweichow Moutai',
             sentiment_score=75,
-            trend_prediction='看多',
-            analysis_summary='技术面强势，消息面利好',
-            operation_advice='买入',
-            technical_analysis='放量突破 MA20，MACD 金叉',
-            news_summary='公司发布分红公告，业绩超预期',
+            trend_prediction='Bullish',
+            analysis_summary='Strong technicals, positive news',
+            operation_advice='Buy',
+            technical_analysis='Volume breakout above MA20, MACD golden cross',
+            news_summary='Company announced dividend; earnings beat expectations',
         ),
         AnalysisResult(
             code='000001',
-            name='平安银行',
+            name='Ping An Bank',
             sentiment_score=45,
-            trend_prediction='震荡',
-            analysis_summary='横盘整理，等待方向',
-            operation_advice='持有',
-            technical_analysis='均线粘合，成交量萎缩',
-            news_summary='近期无重大消息',
+            trend_prediction='Sideways',
+            analysis_summary='Consolidating, waiting for direction',
+            operation_advice='Hold',
+            technical_analysis='MAs converging, volume shrinking',
+            news_summary='No major news recently',
         ),
         AnalysisResult(
             code='300750',
-            name='宁德时代',
+            name='CATL',
             sentiment_score=35,
-            trend_prediction='看空',
-            analysis_summary='技术面走弱，注意风险',
-            operation_advice='卖出',
-            technical_analysis='跌破 MA10 支撑，量能不足',
-            news_summary='行业竞争加剧，毛利率承压',
+            trend_prediction='Bearish',
+            analysis_summary='Weakening technicals, watch for risk',
+            operation_advice='Sell',
+            technical_analysis='Broke below MA10 support, insufficient volume',
+            news_summary='Intensifying sector competition, margin pressure',
         ),
     ]
-    
+
     service = NotificationService()
-    
-    # 显示检测到的渠道
-    print("=== 通知渠道检测 ===")
-    print(f"当前渠道: {service.get_channel_names()}")
-    print(f"渠道列表: {service.get_available_channels()}")
-    print(f"服务可用: {service.is_available()}")
-    
-    # 生成日报
-    print("\n=== 生成日报测试 ===")
+
+    # Show detected channels
+    print("=== Notification Channel Detection ===")
+    print(f"Current channels: {service.get_channel_names()}")
+    print(f"Channel list: {service.get_available_channels()}")
+    print(f"Service available: {service.is_available()}")
+
+    # Generate daily report
+    print("\n=== Daily Report Generation Test ===")
     report = service.generate_daily_report(test_results)
     print(report)
-    
-    # 保存到文件
-    print("\n=== 保存日报 ===")
+
+    # Save to file
+    print("\n=== Save Daily Report ===")
     filepath = service.save_report_to_file(report)
-    print(f"保存成功: {filepath}")
-    
-    # 推送测试
+    print(f"Saved successfully: {filepath}")
+
+    # Push test
     if service.is_available():
-        print(f"\n=== 推送测试（{service.get_channel_names()}）===")
+        print(f"\n=== Push Test ({service.get_channel_names()}) ===")
         success = service.send(report)
-        print(f"推送结果: {'成功' if success else '失败'}")
+        print(f"Push result: {'success' if success else 'failed'}")
     else:
-        print("\n通知渠道未配置，跳过推送测试")
+        print("\nNo notification channels configured; skipping push test")

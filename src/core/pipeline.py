@@ -47,12 +47,12 @@ logger = logging.getLogger(__name__)
 
 class StockAnalysisPipeline:
     """
-    股票分析主流程调度器
-    
-    职责：
-    1. 管理整个分析流程
-    2. 协调数据获取、存储、搜索、分析、通知等模块
-    3. 实现并发控制和异常处理
+    Main stock analysis pipeline scheduler
+
+    Responsibilities:
+    1. Manage the entire analysis workflow
+    2. Coordinate data fetching, storage, search, analysis, and notification modules
+    3. Implement concurrency control and error handling
     """
     
     def __init__(
@@ -65,11 +65,11 @@ class StockAnalysisPipeline:
         save_context_snapshot: Optional[bool] = None
     ):
         """
-        初始化调度器
-        
+        Initialize the scheduler
+
         Args:
-            config: 配置对象（可选，默认使用全局配置）
-            max_workers: 最大并发线程数（可选，默认从配置读取）
+            config: Config object (optional; defaults to global config)
+            max_workers: Maximum concurrent threads (optional; defaults to value from config)
         """
         self.config = config or get_config()
         self.max_workers = max_workers or self.config.max_workers
@@ -80,15 +80,15 @@ class StockAnalysisPipeline:
             self.config.save_context_snapshot if save_context_snapshot is None else save_context_snapshot
         )
         
-        # 初始化各模块
+        # Initialize modules
         self.db = get_db()
         self.fetcher_manager = DataFetcherManager()
-        # 不再单独创建 akshare_fetcher，统一使用 fetcher_manager 获取增强数据
-        self.trend_analyzer = StockTrendAnalyzer()  # 技术分析器
+        # No longer create a separate akshare_fetcher; use fetcher_manager for all enhanced data
+        self.trend_analyzer = StockTrendAnalyzer()  # Technical analyzer
         self.analyzer = GeminiAnalyzer(config=self.config)
         self.notifier = NotificationService(source_message=source_message)
         
-        # 初始化搜索服务
+        # Initialize search service
         self.search_service = SearchService(
             bocha_keys=self.config.bocha_api_keys,
             tavily_keys=self.config.tavily_api_keys,
@@ -101,23 +101,23 @@ class StockAnalysisPipeline:
             news_strategy_profile=getattr(self.config, "news_strategy_profile", "short"),
         )
         
-        logger.info(f"调度器初始化完成，最大并发数: {self.max_workers}")
-        logger.info("已启用技术分析引擎（均线/趋势/量价指标）")
-        # 打印实时行情/筹码配置状态
+        logger.info(f"Scheduler initialized, max concurrency: {self.max_workers}")
+        logger.info("Technical analysis engine enabled (MA / trend / volume-price indicators)")
+        # Print realtime quote / chip distribution configuration status
         if self.config.enable_realtime_quote:
-            logger.info(f"实时行情已启用 (优先级: {self.config.realtime_source_priority})")
+            logger.info(f"Realtime quote enabled (priority: {self.config.realtime_source_priority})")
         else:
-            logger.info("实时行情已禁用，将使用历史收盘价")
+            logger.info("Realtime quote disabled; historical closing prices will be used")
         if self.config.enable_chip_distribution:
-            logger.info("筹码分布分析已启用")
+            logger.info("Chip distribution analysis enabled")
         else:
-            logger.info("筹码分布分析已禁用")
+            logger.info("Chip distribution analysis disabled")
         if self.search_service.is_available:
-            logger.info("搜索服务已启用")
+            logger.info("Search service enabled")
         else:
-            logger.warning("搜索服务未启用（未配置搜索能力）")
+            logger.warning("Search service not enabled (no search capability configured)")
 
-        # 初始化社交舆情服务（仅美股）
+        # Initialize social sentiment service (US stocks only)
         self.social_sentiment_service = SocialSentimentService(
             api_key=self.config.social_sentiment_api_key,
             api_url=self.config.social_sentiment_api_url,
@@ -126,118 +126,122 @@ class StockAnalysisPipeline:
             logger.info("Social sentiment service enabled (Reddit/X/Polymarket, US stocks only)")
 
     def fetch_and_save_stock_data(
-        self, 
+        self,
         code: str,
         force_refresh: bool = False
     ) -> Tuple[bool, Optional[str]]:
         """
-        获取并保存单只股票数据
-        
-        断点续传逻辑：
-        1. 检查数据库是否已有今日数据
-        2. 如果有且不强制刷新，则跳过网络请求
-        3. 否则从数据源获取并保存
-        
+        Fetch and save data for a single stock
+
+        Resume-from-checkpoint logic:
+        1. Check whether today's data already exists in the database
+        2. If it does and force_refresh is False, skip the network request
+        3. Otherwise fetch from the data source and save
+
         Args:
-            code: 股票代码
-            force_refresh: 是否强制刷新（忽略本地缓存）
-            
+            code: Stock code
+            force_refresh: Whether to force a refresh (ignore local cache)
+
         Returns:
-            Tuple[是否成功, 错误信息]
+            Tuple[success, error_message]
         """
         stock_name = code
         try:
-            # 首先获取股票名称
+            # Get stock name first
             stock_name = self.fetcher_manager.get_stock_name(code)
 
             today = date.today()
-            # 注意：这里用自然日 date.today() 做“断点续传”判断。
-            # 若在周末/节假日/非交易日运行，或机器时区不在中国，可能出现：
-            # - 数据库已有最新交易日数据但仍会重复拉取（has_today_data 返回 False）
-            # - 或在跨日/时区偏移时误判“今日已有数据”
-            # 该行为目前保留（按需求不改逻辑），但如需更严谨可改为“最新交易日/数据源最新日期”判断。
-            
-            # 断点续传检查：如果今日数据已存在，跳过
+            # Note: the checkpoint check uses calendar date.today().
+            # On weekends / holidays / non-trading days, or when the machine
+            # timezone differs from the market, this may cause:
+            # - Re-fetching data even though the latest trading-day data is
+            #   already in the database (has_today_data returns False)
+            # - Or incorrectly treating stale data as “today's data” due to
+            #   timezone drift.
+            # This behavior is intentionally preserved (per requirements),
+            # but it can be changed to use “latest trading day / data source date” for stricter logic.
+
+            # Resume-from-checkpoint check: skip if today's data already exists
             if not force_refresh and self.db.has_today_data(code, today):
-                logger.info(f"{stock_name}({code}) 今日数据已存在，跳过获取（断点续传）")
+                logger.info(f”{stock_name}({code}) Today's data already exists; skipping fetch (checkpoint resume)”)
                 return True, None
 
-            # 从数据源获取数据
-            logger.info(f"{stock_name}({code}) 开始从数据源获取数据...")
+            # Fetch data from data source
+            logger.info(f”{stock_name}({code}) Starting data fetch from data source...”)
             df, source_name = self.fetcher_manager.get_daily_data(code, days=30)
 
             if df is None or df.empty:
-                return False, "获取数据为空"
+                return False, "Fetched data is empty"
 
-            # 保存到数据库
+            # Save to database
             saved_count = self.db.save_daily_data(df, code, source_name)
-            logger.info(f"{stock_name}({code}) 数据保存成功（来源: {source_name}，新增 {saved_count} 条）")
+            logger.info(f"{stock_name}({code}) Data saved successfully (source: {source_name}, {saved_count} new records)")
 
             return True, None
 
         except Exception as e:
-            error_msg = f"获取/保存数据失败: {str(e)}"
+            error_msg = f"Failed to fetch/save data: {str(e)}"
             logger.error(f"{stock_name}({code}) {error_msg}")
             return False, error_msg
     
     def analyze_stock(self, code: str, report_type: ReportType, query_id: str) -> Optional[AnalysisResult]:
         """
-        分析单只股票（增强版：含量比、换手率、筹码分析、多维度情报）
-        
-        流程：
-        1. 获取实时行情（量比、换手率）- 通过 DataFetcherManager 自动故障切换
-        2. 获取筹码分布 - 通过 DataFetcherManager 带熔断保护
-        3. 进行趋势分析（基于交易理念）
-        4. 多维度情报搜索（最新消息+风险排查+业绩预期）
-        5. 从数据库获取分析上下文
-        6. 调用 AI 进行综合分析
-        
+        Analyze a single stock (enhanced: includes volume ratio, turnover rate, chip analysis, multi-dimensional intelligence)
+
+        Workflow:
+        1. Get realtime quote (volume ratio, turnover rate) - auto failover via DataFetcherManager
+        2. Get chip distribution - circuit-breaker protected via DataFetcherManager
+        3. Trend analysis (based on trading philosophy)
+        4. Multi-dimensional intelligence search (latest news + risk screening + earnings outlook)
+        5. Get analysis context from database
+        6. Call AI for comprehensive analysis
+
         Args:
-            query_id: 查询链路关联 id
-            code: 股票代码
-            report_type: 报告类型
-            
+            query_id: Query chain correlation id
+            code: Stock code
+            report_type: Report type
+
         Returns:
-            AnalysisResult 或 None（如果分析失败）
+            AnalysisResult or None (if analysis fails)
         """
         try:
-            # 获取股票名称（优先从实时行情获取真实名称）
+            # Get stock name (prefer the actual name from realtime quote)
             stock_name = self.fetcher_manager.get_stock_name(code)
 
-            # Step 1: 获取实时行情（量比、换手率等）- 使用统一入口，自动故障切换
+            # Step 1: Get realtime quote (volume ratio, turnover rate, etc.) - unified entry, auto failover
             realtime_quote = None
             try:
                 realtime_quote = self.fetcher_manager.get_realtime_quote(code)
                 if realtime_quote:
-                    # 使用实时行情返回的真实股票名称
+                    # Use the actual stock name from the realtime quote
                     if realtime_quote.name:
                         stock_name = realtime_quote.name
-                    # 兼容不同数据源的字段（有些数据源可能没有 volume_ratio）
+                    # Handle field differences across data sources (some may not have volume_ratio)
                     volume_ratio = getattr(realtime_quote, 'volume_ratio', None)
                     turnover_rate = getattr(realtime_quote, 'turnover_rate', None)
-                    logger.info(f"{stock_name}({code}) 实时行情: 价格={realtime_quote.price}, "
-                              f"量比={volume_ratio}, 换手率={turnover_rate}% "
-                              f"(来源: {realtime_quote.source.value if hasattr(realtime_quote, 'source') else 'unknown'})")
+                    logger.info(f"{stock_name}({code}) Realtime quote: price={realtime_quote.price}, "
+                              f"volume_ratio={volume_ratio}, turnover_rate={turnover_rate}% "
+                              f"(source: {realtime_quote.source.value if hasattr(realtime_quote, 'source') else 'unknown'})")
                 else:
-                    logger.info(f"{stock_name}({code}) 实时行情获取失败或已禁用，将使用历史数据进行分析")
+                    logger.info(f"{stock_name}({code}) Realtime quote unavailable or disabled; historical data will be used for analysis")
             except Exception as e:
-                logger.warning(f"{stock_name}({code}) 获取实时行情失败: {e}")
+                logger.warning(f"{stock_name}({code}) Failed to get realtime quote: {e}")
 
-            # 如果还是没有名称，使用代码作为名称
+            # If name is still missing, use the code as the name
             if not stock_name:
-                stock_name = f'股票{code}'
+                stock_name = f'Stock{code}'
 
-            # Step 2: 获取筹码分布 - 使用统一入口，带熔断保护
+            # Step 2: Get chip distribution - unified entry with circuit-breaker protection
             chip_data = None
             try:
                 chip_data = self.fetcher_manager.get_chip_distribution(code)
                 if chip_data:
-                    logger.info(f"{stock_name}({code}) 筹码分布: 获利比例={chip_data.profit_ratio:.1%}, "
-                              f"90%集中度={chip_data.concentration_90:.2%}")
+                    logger.info(f"{stock_name}({code}) Chip distribution: profit_ratio={chip_data.profit_ratio:.1%}, "
+                              f"90% concentration={chip_data.concentration_90:.2%}")
                 else:
-                    logger.debug(f"{stock_name}({code}) 筹码分布获取失败或已禁用")
+                    logger.debug(f"{stock_name}({code}) Chip distribution unavailable or disabled")
             except Exception as e:
-                logger.warning(f"{stock_name}({code}) 获取筹码分布失败: {e}")
+                logger.warning(f"{stock_name}({code}) Failed to get chip distribution: {e}")
 
             # If agent mode is explicitly enabled, or specific agent skills are configured, use the Agent analysis pipeline.
             # NOTE: use config.agent_mode (explicit opt-in) instead of
@@ -252,9 +256,9 @@ class StockAnalysisPipeline:
                     use_agent = True
                     logger.info(f"{stock_name}({code}) Auto-enabled agent mode due to configured skills: {configured_skills}")
 
-            # Step 2.5: 基本面能力聚合（统一入口，异常降级）
-            # - 失败时返回 partial/failed，不影响既有技术面/新闻链路
-            # - 关闭开关时仍返回 not_supported 结构
+            # Step 2.5: Fundamental capability aggregation (unified entry, graceful degradation on failure)
+            # - On failure, returns partial/failed without affecting the existing technical/news pipeline
+            # - When disabled, still returns a not_supported structure
             fundamental_context = None
             try:
                 fundamental_context = self.fetcher_manager.get_fundamental_context(
@@ -262,7 +266,7 @@ class StockAnalysisPipeline:
                     budget_seconds=getattr(self.config, 'fundamental_stage_timeout_seconds', 1.5),
                 )
             except Exception as e:
-                logger.warning(f"{stock_name}({code}) 基本面聚合失败: {e}")
+                logger.warning(f"{stock_name}({code}) Fundamental aggregation failed: {e}")
                 fundamental_context = self.fetcher_manager.build_failed_fundamental_context(code, str(e))
 
             fundamental_context = self._attach_belong_boards_to_fundamental_context(
@@ -280,9 +284,9 @@ class StockAnalysisPipeline:
                     coverage=fundamental_context.get("coverage", {}),
                 )
             except Exception as e:
-                logger.debug(f"{stock_name}({code}) 基本面快照写入失败: {e}")
+                logger.debug(f"{stock_name}({code}) Failed to write fundamental snapshot: {e}")
 
-            # Step 3: 趋势分析（基于交易理念）— 在 Agent 分支之前执行，供两条路径共用
+            # Step 3: Trend analysis (based on trading philosophy) — runs before the Agent branch; shared by both paths
             trend_result: Optional[TrendAnalysisResult] = None
             try:
                 end_date = date.today()

@@ -42,29 +42,27 @@ Tài liệu này tổng hợp các vấn đề thường gặp khi sử dụng v
 
 ---
 
-### Q3: Tushare không lấy được dữ liệu, báo lỗi Token sai?
-
-**Hiện tượng**: Log hiển thị `Tushare 获取数据失败: 您的token不对，请确认`
+### Q3: vnstock/TCBS không lấy được dữ liệu?
 
 **Giải pháp**:
-1. **Không có tài khoản Tushare**: Không cần cấu hình `TUSHARE_TOKEN`, hệ thống sẽ tự động sử dụng nguồn dữ liệu miễn phí (AkShare, Efinance)
-2. **Có tài khoản Tushare**: Xác nhận Token có đúng không, có thể kiểm tra tại trung tâm cá nhân [Tushare Pro](https://tushare.pro/weborder/#/login?reg=834638)
-3. Tất cả chức năng cốt lõi của dự án đều có thể chạy bình thường mà không cần Tushare
+1. Cài đúng thư viện: `pip install vnstock3`
+2. Kiểm tra kết nối internet — TCBS API là public, không cần API key
+3. Nếu vnstock thất bại, hệ thống tự động fallback sang TCBS
+4. Tất cả chức năng cốt lõi đều hoạt động với vnstock3 + TCBS, không cần token thêm
 
 ---
 
 ### Q4: Lấy dữ liệu bị giới hạn tốc độ hoặc trả về rỗng?
 
-**Hiện tượng**: Log hiển thị `熔断器触发` (kích hoạt bộ ngắt mạch) hoặc dữ liệu trả về `None`, hoặc xuất hiện lỗi `RemoteDisconnected`, kết nối đến `push2his.eastmoney.com` bị đóng
+**Hiện tượng**: Dữ liệu trả về `None`, lỗi `RemoteDisconnected`, hoặc circuit breaker kích hoạt
 
-**Nguyên nhân**: Các nguồn dữ liệu miễn phí (Đông Phương Tài Phú, Sina...) có cơ chế chống cào, gửi quá nhiều request trong thời gian ngắn sẽ bị giới hạn.
+**Nguyên nhân**: vnstock/TCBS có cơ chế chống cào, gửi quá nhiều request trong thời gian ngắn sẽ bị giới hạn tốc độ.
 
 **Giải pháp**:
-1. Hệ thống đã tích hợp sẵn chuyển đổi tự động đa nguồn dữ liệu và bảo vệ ngắt mạch
+1. Hệ thống đã tích hợp chuyển đổi tự động đa nguồn và bảo vệ circuit breaker
 2. Giảm số lượng cổ phiếu tự chọn, hoặc tăng khoảng cách giữa các request
 3. Tránh kích hoạt phân tích thủ công quá thường xuyên
-4. Nếu API Đông Phương liên tục thất bại, có thể đặt `ENABLE_EASTMONEY_PATCH=true` để bật bản vá (tiêm token NID và User-Agent ngẫu nhiên, giảm xác suất bị giới hạn)
-5. Đặt `MAX_WORKERS=1` để chuyển sang chế độ tuần tự, giảm áp lực并发 lên Đông Phương
+4. Đặt `MAX_WORKERS=1` để chuyển sang chế độ tuần tự, giảm áp lực concurrent request
 
 ---
 
@@ -150,7 +148,7 @@ Sử dụng chế độ kênh: Đặt `LLM_CHANNELS=aihubmix,deepseek,gemini`, v
 **Giải pháp**:
 1. **Tự động chia nhỏ**: Phiên bản mới nhất đã hỗ trợ tự động cắt tin nhắn dài
 2. **Chế độ đẩy từng mã**: Đặt `SINGLE_STOCK_NOTIFY=true`, đẩy tin ngay sau khi phân tích xong mỗi mã
-3. **Báo cáo rút gọn**: Đặt `REPORT_TYPE=simple` để dùng định dạng精简
+3. **Báo cáo rút gọn**: Đặt `REPORT_TYPE=simple` để dùng định dạng rút gọn
 
 ---
 
@@ -299,10 +297,10 @@ python main.py --market-only
 
 ### Q17: Tại sao cuối tuần trigger thủ công trên GitHub Actions vẫn báo "không phải ngày giao dịch, bỏ qua"?
 
-**Hiện tượng**: Đã cấu hình `TRADING_DAY_CHECK_ENABLED` hoặc muốn chạy thủ công, nhưng log vẫn báo "今日所有相关市场均为非交易日，跳过执行" (hôm nay tất cả thị trường liên quan đều không phải ngày giao dịch, bỏ qua).
+**Hiện tượng**: Đã cấu hình `TRADING_DAY_CHECK_ENABLED` hoặc muốn chạy thủ công, nhưng log vẫn báo "hôm nay không phải ngày giao dịch, bỏ qua thực thi".
 
 **Giải pháp**:
-1. Mở `Actions → 每日股票分析 → Run workflow`
+1. Mở `Actions → Daily Stock Analysis → Run workflow`
 2. Khi trigger thủ công đặt `force_run` thành `true` (bắt buộc chạy 1 lần)
 3. Nếu muốn tắt kiểm tra ngày giao dịch lâu dài, vào `Settings → Secrets and variables → Actions` đặt:
    ```bash
@@ -312,7 +310,7 @@ python main.py --market-only
 **Quy tắc**:
 - `TRADING_DAY_CHECK_ENABLED=true` và `force_run=false`: Bỏ qua nếu không phải ngày giao dịch (mặc định)
 - `force_run=true`: Lần này dù không phải ngày giao dịch cũng thực thi
-- `TRADING_DAY_CHECK_ENABLED=false`: Không kiểm tra ngày giao dịch cho cả定时 và thủ công
+- `TRADING_DAY_CHECK_ENABLED=false`: Không kiểm tra ngày giao dịch cho cả lịch tự động và thủ công
 
 ---
 

@@ -1,14 +1,14 @@
 # -*- coding: utf-8 -*-
 """
 ===================================
-A股自选股智能分析系统 - 存储层
+Stock Watchlist Intelligent Analysis System - Storage Layer
 ===================================
 
-职责：
-1. 管理 SQLite 数据库连接（单例模式）
-2. 定义 ORM 数据模型
-3. 提供数据存取接口
-4. 实现智能更新逻辑（断点续传）
+Responsibilities:
+1. Manage SQLite database connections (singleton pattern)
+2. Define ORM data models
+3. Provide data read/write interfaces
+4. Implement smart update logic (resume from last checkpoint)
 """
 
 import atexit
@@ -52,58 +52,58 @@ from src.config import get_config
 
 logger = logging.getLogger(__name__)
 
-# SQLAlchemy ORM 基类
+# SQLAlchemy ORM base class
 Base = declarative_base()
 
 if TYPE_CHECKING:
     from src.search_service import SearchResponse
 
 
-# === 数据模型定义 ===
+# === Data model definitions ===
 
 class StockDaily(Base):
     """
-    股票日线数据模型
-    
-    存储每日行情数据和计算的技术指标
-    支持多股票、多日期的唯一约束
+    Stock daily data model
+
+    Stores daily market data and calculated technical indicators
+    Supports unique constraint across multiple stocks and dates
     """
     __tablename__ = 'stock_daily'
-    
-    # 主键
+
+    # Primary key
     id = Column(Integer, primary_key=True, autoincrement=True)
-    
-    # 股票代码（如 600519, 000001）
+
+    # Stock code (e.g. 600519, 000001)
     code = Column(String(10), nullable=False, index=True)
-    
-    # 交易日期
+
+    # Trading date
     date = Column(Date, nullable=False, index=True)
-    
-    # OHLC 数据
+
+    # OHLC data
     open = Column(Float)
     high = Column(Float)
     low = Column(Float)
     close = Column(Float)
-    
-    # 成交数据
-    volume = Column(Float)  # 成交量（股）
-    amount = Column(Float)  # 成交额（元）
-    pct_chg = Column(Float)  # 涨跌幅（%）
-    
-    # 技术指标
+
+    # Trading data
+    volume = Column(Float)  # Volume (shares)
+    amount = Column(Float)  # Turnover (currency)
+    pct_chg = Column(Float)  # Price change (%)
+
+    # Technical indicators
     ma5 = Column(Float)
     ma10 = Column(Float)
     ma20 = Column(Float)
-    volume_ratio = Column(Float)  # 量比
-    
-    # 数据来源
-    data_source = Column(String(50))  # 记录数据来源（如 AkshareFetcher）
-    
-    # 更新时间
+    volume_ratio = Column(Float)  # Volume ratio
+
+    # Data source
+    data_source = Column(String(50))  # Record data source (e.g. AkshareFetcher)
+
+    # Timestamps
     created_at = Column(DateTime, default=datetime.now)
     updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now)
-    
-    # 唯一约束：同一股票同一日期只能有一条数据
+
+    # Unique constraint: only one record per stock per date
     __table_args__ = (
         UniqueConstraint('code', 'date', name='uix_code_date'),
         Index('ix_code_date', 'code', 'date'),
@@ -113,7 +113,7 @@ class StockDaily(Base):
         return f"<StockDaily(code={self.code}, date={self.date}, close={self.close})>"
     
     def to_dict(self) -> Dict[str, Any]:
-        """转换为字典"""
+        """Convert to dictionary"""
         return {
             'code': self.code,
             'date': self.date,
@@ -134,34 +134,34 @@ class StockDaily(Base):
 
 class NewsIntel(Base):
     """
-    新闻情报数据模型
+    News intelligence data model
 
-    存储搜索到的新闻情报条目，用于后续分析与查询
+    Stores fetched news intelligence items for subsequent analysis and queries
     """
     __tablename__ = 'news_intel'
 
     id = Column(Integer, primary_key=True, autoincrement=True)
 
-    # 关联用户查询操作
+    # Associated user query
     query_id = Column(String(64), index=True)
 
-    # 股票信息
+    # Stock information
     code = Column(String(10), nullable=False, index=True)
     name = Column(String(50))
 
-    # 搜索上下文
+    # Search context
     dimension = Column(String(32), index=True)  # latest_news / risk_check / earnings / market_analysis / industry
     query = Column(String(255))
     provider = Column(String(32), index=True)
 
-    # 新闻内容
+    # News content
     title = Column(String(300), nullable=False)
     snippet = Column(Text)
     url = Column(String(1000), nullable=False)
     source = Column(String(100))
     published_date = Column(DateTime, index=True)
 
-    # 入库时间
+    # Storage timestamp
     fetched_at = Column(DateTime, default=datetime.now, index=True)
     query_source = Column(String(32), index=True)  # bot/web/cli/system
     requester_platform = Column(String(20))
@@ -182,9 +182,10 @@ class NewsIntel(Base):
 
 class FundamentalSnapshot(Base):
     """
-    基本面上下文快照（P0 write-only）。
+    Fundamental context snapshot (P0 write-only).
 
-    仅用于写入，主链路不依赖读取该表，便于后续回测/画像扩展。
+    Write-only; the main pipeline does not depend on reading this table,
+    enabling future backtesting/profiling extensions.
     """
     __tablename__ = 'fundamental_snapshot'
 
@@ -207,34 +208,34 @@ class FundamentalSnapshot(Base):
 
 class AnalysisHistory(Base):
     """
-    分析结果历史记录模型
+    Analysis result history model
 
-    保存每次分析结果，支持按 query_id/股票代码检索
+    Saves each analysis result; supports lookup by query_id or stock code
     """
     __tablename__ = 'analysis_history'
 
     id = Column(Integer, primary_key=True, autoincrement=True)
 
-    # 关联查询链路
+    # Associated query chain
     query_id = Column(String(64), index=True)
 
-    # 股票信息
+    # Stock information
     code = Column(String(10), nullable=False, index=True)
     name = Column(String(50))
     report_type = Column(String(16), index=True)
 
-    # 核心结论
+    # Core conclusions
     sentiment_score = Column(Integer)
     operation_advice = Column(String(20))
     trend_prediction = Column(String(50))
     analysis_summary = Column(Text)
 
-    # 详细数据
+    # Detailed data
     raw_result = Column(Text)
     news_content = Column(Text)
     context_snapshot = Column(Text)
 
-    # 狙击点位（用于回测）
+    # Sniper points (for backtesting)
     ideal_buy = Column(Float)
     secondary_buy = Column(Float)
     stop_loss = Column(Float)
@@ -247,7 +248,7 @@ class AnalysisHistory(Base):
     )
 
     def to_dict(self) -> Dict[str, Any]:
-        """转换为字典"""
+        """Convert to dictionary"""
         return {
             'id': self.id,
             'query_id': self.query_id,
@@ -270,7 +271,7 @@ class AnalysisHistory(Base):
 
 
 class BacktestResult(Base):
-    """单条分析记录的回测结果。"""
+    """Backtest result for a single analysis record."""
 
     __tablename__ = 'backtest_results'
 
@@ -283,35 +284,35 @@ class BacktestResult(Base):
         index=True,
     )
 
-    # 冗余字段，便于按股票筛选
+    # Redundant field for stock-level filtering
     code = Column(String(10), nullable=False, index=True)
     analysis_date = Column(Date, index=True)
 
-    # 回测参数
+    # Backtest parameters
     eval_window_days = Column(Integer, nullable=False, default=10)
     engine_version = Column(String(16), nullable=False, default='v1')
 
-    # 状态
+    # Status
     eval_status = Column(String(16), nullable=False, default='pending')
     evaluated_at = Column(DateTime, default=datetime.now, index=True)
 
-    # 建议快照（避免未来分析字段变化导致回测不可解释）
+    # Advice snapshot (prevents backtests from becoming uninterpretable if future analysis fields change)
     operation_advice = Column(String(20))
     position_recommendation = Column(String(8))  # long/cash
 
-    # 价格与收益
+    # Prices and returns
     start_price = Column(Float)
     end_close = Column(Float)
     max_high = Column(Float)
     min_low = Column(Float)
     stock_return_pct = Column(Float)
 
-    # 方向与结果
+    # Direction and outcome
     direction_expected = Column(String(16))  # up/down/flat/not_down
     direction_correct = Column(Boolean, nullable=True)
     outcome = Column(String(16))  # win/loss/neutral
 
-    # 目标价命中（仅 long 且配置了止盈/止损时有意义）
+    # Target price hit (meaningful only for long with stop-loss/take-profit configured)
     stop_loss = Column(Float)
     take_profit = Column(Float)
     hit_stop_loss = Column(Boolean)
@@ -320,7 +321,7 @@ class BacktestResult(Base):
     first_hit_date = Column(Date)
     first_hit_trading_days = Column(Integer)
 
-    # 模拟执行（long-only）
+    # Simulated execution (long-only)
     simulated_entry_price = Column(Float)
     simulated_exit_price = Column(Float)
     simulated_exit_reason = Column(String(24))  # stop_loss/take_profit/window_end/cash/ambiguous_stop_loss
@@ -338,7 +339,7 @@ class BacktestResult(Base):
 
 
 class BacktestSummary(Base):
-    """回测汇总指标（按股票或全局）。"""
+    """Backtest summary metrics (per stock or global)."""
 
     __tablename__ = 'backtest_summaries'
 

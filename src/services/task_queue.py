@@ -1,14 +1,14 @@
 # -*- coding: utf-8 -*-
 """
 ===================================
-A股自选股智能分析系统 - 异步任务队列
+A-Share Watchlist Intelligent Analysis System - Async Task Queue
 ===================================
 
-职责：
-1. 管理异步分析任务的生命周期
-2. 防止相同股票代码重复提交
-3. 提供 SSE 事件广播机制
-4. 任务完成后持久化到数据库
+Responsibilities:
+1. Manage the lifecycle of async analysis tasks
+2. Prevent duplicate submissions for the same stock code
+3. Provide SSE event broadcasting mechanism
+4. Persist tasks to the database after completion
 """
 
 from __future__ import annotations
@@ -112,27 +112,27 @@ class TaskInfo:
 
 class DuplicateTaskError(Exception):
     """
-    重复提交异常
-    
-    当股票已在分析中时抛出此异常
+    Duplicate submission exception.
+
+    Raised when a stock is already being analyzed.
     """
     def __init__(self, stock_code: str, existing_task_id: str):
         self.stock_code = stock_code
         self.existing_task_id = existing_task_id
-        super().__init__(f"股票 {stock_code} 正在分析中 (task_id: {existing_task_id})")
+        super().__init__(f"Stock {stock_code} is currently being analyzed (task_id: {existing_task_id})")
 
 
 class AnalysisTaskQueue:
     """
-    异步分析任务队列
-    
-    单例模式，全局唯一实例
-    
-    特性：
-    1. 防止相同股票代码重复提交
-    2. 线程池执行分析任务
-    3. SSE 事件广播机制
-    4. 任务完成后自动持久化
+    Async analysis task queue.
+
+    Singleton pattern — globally unique instance.
+
+    Features:
+    1. Prevents duplicate submissions for the same stock code
+    2. Thread-pool execution of analysis tasks
+    3. SSE event broadcasting mechanism
+    4. Automatic persistence after task completion
     """
     
     _instance: Optional['AnalysisTaskQueue'] = None
@@ -146,37 +146,37 @@ class AnalysisTaskQueue:
         return cls._instance
     
     def __init__(self, max_workers: int = 3):
-        # 防止重复初始化
+        # Prevent re-initialization
         if hasattr(self, '_initialized') and self._initialized:
             return
-        
+
         self._max_workers = max_workers
         self._executor: Optional[ThreadPoolExecutor] = None
-        
-        # 核心数据结构
+
+        # Core data structures
         self._tasks: Dict[str, TaskInfo] = {}           # task_id -> TaskInfo
         self._analyzing_stocks: Dict[str, str] = {}     # dedupe_key -> task_id
         self._futures: Dict[str, Future] = {}           # task_id -> Future
-        
-        # SSE 订阅者列表（asyncio.Queue 实例）
+
+        # SSE subscriber list (asyncio.Queue instances)
         self._subscribers: List['AsyncQueue'] = []
         self._subscribers_lock = threading.Lock()
-        
-        # 主事件循环引用（用于跨线程广播）
+
+        # Reference to the main event loop (used for cross-thread broadcasting)
         self._main_loop: Optional[asyncio.AbstractEventLoop] = None
-        
-        # 线程安全锁
+
+        # Thread-safety lock
         self._data_lock = threading.RLock()
-        
-        # 任务历史保留数量（内存中）
+
+        # Number of task history entries retained in memory
         self._max_history = 100
-        
+
         self._initialized = True
-        logger.info(f"[TaskQueue] 初始化完成，最大并发: {max_workers}")
+        logger.info(f"[TaskQueue] Initialized, max concurrency: {max_workers}")
     
     @property
     def executor(self) -> ThreadPoolExecutor:
-        """懒加载线程池"""
+        """Lazy-load thread pool."""
         if self._executor is None:
             self._executor = ThreadPoolExecutor(
                 max_workers=self._max_workers,
@@ -216,7 +216,7 @@ class AnalysisTaskQueue:
             target = max(1, int(max_workers))
         except (TypeError, ValueError):
             if log:
-                logger.warning("[TaskQueue] 忽略非法 MAX_WORKERS 值: %r", max_workers)
+                logger.warning("[TaskQueue] Ignoring invalid MAX_WORKERS value: %r", max_workers)
             return "unchanged"
 
         executor_to_shutdown: Optional[ThreadPoolExecutor] = None
@@ -229,7 +229,7 @@ class AnalysisTaskQueue:
             if self._has_inflight_tasks_locked():
                 if log:
                     logger.info(
-                        "[TaskQueue] 最大并发调整延后: 当前繁忙 (%s -> %s)",
+                        "[TaskQueue] Concurrency update deferred: queue is busy (%s -> %s)",
                         previous,
                         target,
                     )
@@ -243,20 +243,20 @@ class AnalysisTaskQueue:
             executor_to_shutdown.shutdown(wait=False)
 
         if log:
-            logger.info("[TaskQueue] 最大并发已更新: %s -> %s", previous, target)
+            logger.info("[TaskQueue] Max concurrency updated: %s -> %s", previous, target)
         return "applied"
     
-    # ========== 任务提交与查询 ==========
-    
+    # ========== Task Submission and Query ==========
+
     def is_analyzing(self, stock_code: str) -> bool:
         """
-        检查股票是否正在分析中
-        
+        Check whether a stock is currently being analyzed.
+
         Args:
-            stock_code: 股票代码
-            
+            stock_code: Stock code
+
         Returns:
-            True 表示正在分析中
+            True if the stock is currently being analyzed
         """
         dedupe_key = _dedupe_stock_code_key(stock_code)
         with self._data_lock:
@@ -264,13 +264,13 @@ class AnalysisTaskQueue:
     
     def get_analyzing_task_id(self, stock_code: str) -> Optional[str]:
         """
-        获取正在分析该股票的任务 ID
-        
+        Get the task ID currently analyzing the given stock.
+
         Args:
-            stock_code: 股票代码
-            
+            stock_code: Stock code
+
         Returns:
-            任务 ID，如果没有则返回 None
+            Task ID, or None if not found
         """
         dedupe_key = _dedupe_stock_code_key(stock_code)
         with self._data_lock:
@@ -320,7 +320,7 @@ class AnalysisTaskQueue:
         """
         stock_code = canonical_stock_code(stock_code)
         if not stock_code:
-            raise ValueError("股票代码不能为空或仅包含空白字符")
+            raise ValueError("Stock code cannot be empty or contain only whitespace")
 
         accepted, duplicates = self.submit_tasks_batch(
             [stock_code],
@@ -375,7 +375,7 @@ class AnalysisTaskQueue:
                     stock_code=stock_code,
                     stock_name=stock_name,
                     status=TaskStatus.PENDING,
-                    message="任务已加入队列",
+                    message="Task queued",
                     report_type=report_type,
                     original_query=original_query,
                     selection_source=selection_source,
@@ -400,7 +400,7 @@ class AnalysisTaskQueue:
                 self._futures[task_id] = future
                 accepted.append(task_info)
                 created_task_ids.append(task_id)
-                logger.info(f"[TaskQueue] 任务已提交: {stock_code} -> {task_id}")
+                logger.info(f"[TaskQueue] Task submitted: {stock_code} -> {task_id}")
 
             # Keep task_created ordered before worker-emitted task_started/task_completed.
             # Broadcasting here also preserves batch rollback semantics because we only
@@ -411,7 +411,7 @@ class AnalysisTaskQueue:
         return accepted, duplicates
 
     def _rollback_submitted_tasks_locked(self, task_ids: List[str]) -> None:
-        """回滚当前批次已创建但尚未稳定返回给调用方的任务。"""
+        """Roll back tasks in the current batch that were created but not yet stably returned to the caller."""
         for task_id in task_ids:
             future = self._futures.pop(task_id, None)
             if future is not None:
@@ -425,13 +425,13 @@ class AnalysisTaskQueue:
     
     def get_task(self, task_id: str) -> Optional[TaskInfo]:
         """
-        获取任务信息
-        
+        Get task information.
+
         Args:
-            task_id: 任务 ID
-            
+            task_id: Task ID
+
         Returns:
-            TaskInfo 或 None
+            TaskInfo or None
         """
         with self._data_lock:
             task = self._tasks.get(task_id)
@@ -439,10 +439,10 @@ class AnalysisTaskQueue:
     
     def list_pending_tasks(self) -> List[TaskInfo]:
         """
-        获取所有进行中的任务（pending + processing）
-        
+        Get all in-progress tasks (pending + processing).
+
         Returns:
-            任务列表（副本）
+            Task list (copies)
         """
         with self._data_lock:
             return [
@@ -452,13 +452,13 @@ class AnalysisTaskQueue:
     
     def list_all_tasks(self, limit: int = 50) -> List[TaskInfo]:
         """
-        获取所有任务（按创建时间倒序）
-        
+        Get all tasks (sorted by creation time, descending).
+
         Args:
-            limit: 返回数量限制
-            
+            limit: Maximum number of results to return
+
         Returns:
-            任务列表（副本）
+            Task list (copies)
         """
         with self._data_lock:
             tasks = sorted(
@@ -470,10 +470,10 @@ class AnalysisTaskQueue:
     
     def get_task_stats(self) -> Dict[str, int]:
         """
-        获取任务统计信息
-        
+        Get task statistics.
+
         Returns:
-            统计信息字典
+            Statistics dictionary
         """
         with self._data_lock:
             stats = {
@@ -487,8 +487,8 @@ class AnalysisTaskQueue:
                 stats[task.status.value] = stats.get(task.status.value, 0) + 1
             return stats
     
-    # ========== 任务执行 ==========
-    
+    # ========== Task Execution ==========
+
     def _execute_task(
         self,
         task_id: str,
@@ -498,34 +498,34 @@ class AnalysisTaskQueue:
         notify: bool = True,
     ) -> Optional[Dict[str, Any]]:
         """
-        执行分析任务（在线程池中运行）
-        
+        Execute an analysis task (runs inside the thread pool).
+
         Args:
-            task_id: 任务 ID
-            stock_code: 股票代码
-            report_type: 报告类型
-            force_refresh: 是否强制刷新
-            
+            task_id: Task ID
+            stock_code: Stock code
+            report_type: Report type
+            force_refresh: Whether to bypass cache
+
         Returns:
-            分析结果字典
+            Analysis result dictionary
         """
-        # 更新状态为处理中
+        # Update status to processing
         with self._data_lock:
             task = self._tasks.get(task_id)
             if not task:
                 return None
             task.status = TaskStatus.PROCESSING
             task.started_at = datetime.now()
-            task.message = "正在分析中..."
+            task.message = "Analyzing..."
             task.progress = 10
         
         self._broadcast_event("task_started", task.to_dict())
         
         try:
-            # 导入分析服务（延迟导入避免循环依赖）
+            # Deferred import to avoid circular dependencies
             from src.services.analysis_service import AnalysisService
-            
-            # 执行分析
+
+            # Execute analysis
             service = AnalysisService()
             result = service.analyze_stock(
                 stock_code=stock_code,

@@ -1,82 +1,110 @@
-# Vietnam Market Migration — Progress Tracker
+# Kế Hoạch Dự Án — Daily Stock Analysis (VN)
 
-> Last updated: 2026-03-31
-
-## Commits đã thực hiện
-
-| Commit | Phase | Nội dung |
-|--------|-------|----------|
-| `pre-vn-migration` | tag | Safety tag trước khi bắt đầu |
-| phase 1+2 | Phase 1 + 2 | Xóa CN/US fetchers, thêm vnstock+tcbs, trading_calendar, market_profile, market_context |
-| phase 3 | Phase 3 | Thêm ngôn ngữ `vi`, VN market review, Zalo stub |
-| phase 4 | Phase 4 | Migrate 11 strategy YAMLs sang VN rules, tạo 3 strategy VN mới |
-| phase 5 | Phase 5 | Dịch telegram_sender sang English, fix regex VN trong research.py |
+> Cập nhật: 2026-04-07
+> Trạng thái tổng: **Vietnam Migration ✅ DONE** — Đang bước vào giai đoạn dọn sạch ngôn ngữ (Translation Cleanup)
 
 ---
 
-## Phase Status
+## Phần 1 — Vietnam Market Migration
 
-### ✅ Phase 1 — Cleanup (DONE)
-- [x] Xóa `efinance`, `akshare`, `tushare`, `pytdx`, `baostock`, `yfinance`, `tickflow` fetchers
-- [x] Xóa WeChat, Feishu, PushPlus, Server酱3, AstrBot, Pushover senders
-- [x] Xóa DingTalk, Feishu Stream bot platforms
-- [x] Xóa `feishu_doc.py`
-- [x] Update `data_provider/__init__.py`, `notification_sender/__init__.py`, `bot/platforms/__init__.py`
+Mục tiêu: Chuyển toàn bộ hệ thống từ phục vụ CN/HK/US sang **chỉ thị trường Việt Nam (HOSE + HNX)**.
 
-### ✅ Phase 2 — VN Foundation (DONE)
-- [x] Tạo `data_provider/vnstock_fetcher.py` (primary)
-- [x] Tạo `data_provider/tcbs_fetcher.py` (fallback)
-- [x] Refactor `data_provider/base.py`: xóa CN/HK/US helpers, thêm `is_vn_stock_code()`
-- [x] Rewrite `src/core/trading_calendar.py` → VN only (HOSE=XSTC, UTC+7)
-- [x] Rewrite `src/core/market_profile.py` → VN only (VNINDEX, VN30)
-- [x] Rewrite `src/market_context.py` → VN only (`detect_market()` always returns `vn`)
-- [x] Update `main.py`: xóa Feishu Doc block, xóa DingTalk/Feishu stream clients
+| Phase | Mô tả | Trạng thái |
+|-------|-------|------------|
+| Phase 1 | Xóa fetchers TQ/US, xóa kênh thông báo TQ (WeChat, Feishu, DingTalk...) | ✅ DONE |
+| Phase 2 | Tích hợp `vnstock_fetcher`, `tcbs_fetcher`, viết lại `trading_calendar`, `market_profile`, `market_context` | ✅ DONE |
+| Phase 3 | Ngôn ngữ mặc định `vi`, viết lại `market_review.py` cho VNINDEX+VN30, tạo `zalo_sender.py` stub | ✅ DONE |
+| Phase 4 | Migrate 11 strategy YAMLs (±7%/±10%, lot 100, T+2.5), tạo 3 strategy VN mới | ✅ DONE |
+| Phase 5 | Dịch `telegram_sender.py` sang English, fix regex VN trong `research.py` | ✅ DONE |
+| Phase 6 | Cập nhật `config.py` defaults (report_language=vi, market_review_region=vn), cập nhật docs & `.env.example` | ✅ DONE |
+| Phase 7 | CI Gate: chạy `ci_gate.sh`, pytest pass, verify vnstock+TCBS import | ✅ DONE |
 
-### ✅ Phase 3 — Reporting & Language (DONE)
-- [x] `src/report_language.py`: thêm `vi` làm default language với full Vietnamese labels
-- [x] `src/core/market_review.py`: rewrite cho VN only (VNINDEX + VN30)
-- [x] `src/notification_sender/zalo_sender.py`: tạo stub (deferred)
-
-### ✅ Phase 4 — Strategy Engine (DONE)
-- [x] 11 strategy YAMLs: thêm `vn_market` block (±7%/±10%, lot 100, T+2.5, no short-selling)
-- [x] 11 strategy YAMLs: dịch `display_name` và `description` sang tiếng Việt
-- [x] Tạo 3 VN scaffold strategies: `vn30_rotation.yaml`, `vn_bank_sector.yaml`, `vn_penny_alert.yaml`
-
-### ✅ Phase 5 — Notifications & Bot (PARTIAL)
-- [x] `telegram_sender.py`: dịch tất cả comment/docstring sang English
-- [x] `bot/commands/research.py`: fix regex VN stock code, cập nhật examples
-
-### ⬜ Phase 6 — Docs & CHANGELOG (TODO)
-- [ ] Thêm VN migration entries vào `docs/CHANGELOG.md [Unreleased]`
-- [ ] Cập nhật `docs/full-guide_EN.md` — VN data sources, config vars
-- [ ] Cập nhật `.env.example` — thêm VN-specific vars
-- [ ] Kiểm tra README_EN.md có mention VN market chưa
-
-### ⬜ Phase 7 — CI Gate & Final QA (TODO)
-- [ ] Chạy `./scripts/ci_gate.sh` full
-- [ ] Kiểm tra `python -m pytest -m "not network"` pass
-- [ ] Verify vnstock + TCBS fetcher import không crash
-- [ ] Update `bot/commands/__init__.py` nếu còn reference CN commands
+**Tham khảo quyết định kiến trúc:** [`docs/vietnam-migration-plan.md`](./vietnam-migration-plan.md)
 
 ---
 
-## Việc còn lại khi resume
+## Phần 2 — Translation Cleanup (Dọn Tiếng Trung)
 
-1. **Phase 6 Docs**: Cập nhật CHANGELOG + full-guide_EN + .env.example
-2. **Phase 7 CI Gate**: Chạy test suite, fix bất kỳ import lỗi nào còn sót
-3. **Scan toàn project** tìm references còn sót của CN/US/HK:
-   ```bash
-   grep -rn "cn\|a.gu\|SHSE\|SZSE\|FinanceFetcher\|AkshareFetch\|TushareFetch" src/ data_provider/ --include="*.py" | grep -v "__pycache__"
-   ```
+Mục tiêu: Loại bỏ hoàn toàn tiếng Trung khỏi source code và tài liệu.
+
+### Giai đoạn A — Tài liệu (Docs)
+
+Viết lại sang tiếng Việt chuẩn. Thực hiện thủ công.
+
+| File | Hành động | Trạng thái |
+|------|-----------|------------|
+| `README.md` | Viết lại toàn bộ cho thị trường VN | ✅ DONE |
+| `AGENTS.md` | Dịch sang tiếng Việt | ✅ DONE |
+| `docs/FAQ.md` | Dịch + thêm ngữ cảnh HOSE/HNX | ✅ DONE |
+| `docs/full-guide.md` | Dọn sạch Chinese text | ✅ DONE |
+| `docs/bot-command.md` | Viết lại cho Telegram/Discord VN | ✅ DONE |
+| `strategies/README.md` | Dọn sạch Chinese text | ✅ DONE |
+| `docs/README_CHT.md` | **Xóa** (không dùng Phồn thể) | ✅ DONE (file không tồn tại) |
+| `docs/CHANGELOG.md` | Dọn sạch label tiếng Trung trong `[Unreleased]` | ✅ DONE |
+
+Giữ nguyên (bản EN): `README_EN.md`, `docs/full-guide_EN.md`, `docs/INDEX_EN.md`
 
 ---
 
-## Thông tin quan trọng
+### Giai đoạn B — Source Code (`.py`)
 
-- **Git tag an toàn**: `pre-vn-migration`
-- **Rollback**: `git checkout pre-vn-migration`
-- **Default report language**: đã đổi `zh` → `vi`
-- **Telegram Bot setup**: cần TELEGRAM_BOT_TOKEN + TELEGRAM_CHAT_ID trong `.env` (chat với @BotFather)
-- **Zalo**: deferred — cần Zalo OA business account
-- **vnstock lib**: `pip install vnstock3`
-- **TCBS**: public API, không cần API key
+Tất cả comment/docstring/log còn tiếng Trung → chuyển thành **tiếng Anh**.
+
+> Snapshot 2026-04-07: **90/244 file sạch** — còn 154 file, 4624 dòng (đang có agents chạy nền)
+
+**Đã sạch (agents đã xử lý):**
+- `src/formatters.py` ✅
+- `bot/dispatcher.py` ✅ (còn 16 dòng là code data: LLM prompt examples + regex — đúng, không cần dịch)
+- `data_provider/realtime_types.py` ✅
+- `src/report_language.py` — 120 dòng còn lại là bảng dịch `zh` (data values, không phải comment — đúng)
+
+**Đang xử lý (agents chạy nền):**
+- Batch 1: `src/analyzer.py`, `src/search_service.py`
+- Batch 2: `src/notification.py`, `src/core/pipeline.py`
+- Batch 3: `data_provider/base.py`, `src/stock_analyzer.py`, `src/storage.py`
+- Batch 4: `src/agent/executor.py`, `src/market_analyzer.py`, `src/config.py`
+- Batch 6: `api/v1/endpoints/` + `api/v1/schemas/` + `api/app.py`
+- Batch 7: `bot/commands/` + `bot/handler.py` + `bot/models.py` + `bot/platforms/`
+- Batch 8: `src/services/` + `src/repositories/` + `src/data/`
+- Batch 9: `src/notification_sender/` + `src/agent/` + `src/scheduler.py`
+- Batch 10: `tests/` + `scripts/`
+
+**Phương pháp:** Dùng subagents song song (5-9 agents cùng lúc), mỗi agent đọc-dịch-ghi đè từng nhóm file.
+
+**Tiêu chí hoàn thành:** `python scripts/scan_chinese.py` trả về 0 file dirty. `pytest -m "not network"` pass.
+
+---
+
+### Giai đoạn C — Strategies YAML
+
+| File | Hành động |
+|------|-----------|
+| `strategies/*.yaml` — 11 file cũ | Xóa text Trung còn sót, đảm bảo `description` bằng tiếng Việt/Anh |
+| `vn30_rotation.yaml`, `vn_bank_sector.yaml`, `vn_penny_alert.yaml` | Hoàn thiện nội dung (hiện là scaffold rỗng) |
+
+---
+
+## Phần 3 — Backlog / Tương lai
+
+- **Zalo OA**: `zalo_sender.py` hiện là stub — cần Zalo OA business account để kích hoạt
+- **HNX đầy đủ**: Hiện tập trung HOSE, mở rộng HNX sau
+- **Backtest VN-specific strategies**: `vn30_rotation`, `vn_bank_sector`, `vn_penny_alert`
+- **Vietstock/FireAnt crawler**: Lấy tin tức VN cho market review
+- **Web UI i18n**: Dịch chuỗi EN/TQ trong `apps/dsa-web` sang tiếng Việt
+
+---
+
+## Ghi Chú Kỹ Thuật
+
+| Mục | Giá trị |
+|-----|---------|
+| Git tag an toàn | `pre-vn-migration` |
+| Rollback | `git checkout pre-vn-migration` |
+| Default report language | `vi` |
+| VN lib | `pip install vnstock3` |
+| TCBS | Public API, không cần key |
+| Zalo | Deferred — cần Zalo OA |
+| Timezone | `Asia/Ho_Chi_Minh` (UTC+7) |
+| Price limits | HOSE ±7%, HNX ±10% |
+| Lot size | 100 cổ phiếu |
+| Settlement | T+2.5 |

@@ -9,18 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
-<!-- 新条目格式：- [类型] 描述（类型取值：新功能/改进/修复/文档/测试/chore）-->
-<!-- 每条独立一行追加到本段末尾，无需分类标题，合并时冲突最小 -->
+<!-- Format: - [feat/fix/improvement/docs/chore] Description — append one line per entry, no section headers -->
 
-- [文档] 📋 **Thêm kế hoạch chuyển đổi sang thị trường Việt Nam** — Brainstorm session hoàn tất, kết quả lưu tại `docs/vietnam-migration-plan.md`. Quyết định: dữ liệu vnstock+TCBS, chỉ HOSE, báo cáo tiếng Việt, thông báo Zalo+Telegram+Discord, strategies chuyển đổi+thêm mới. Chờ xác nhận trước khi implementation.
-- [新功能] 🇻🇳 **Vietnam market migration — Phase 1+2** — Removed all CN/HK/US data fetchers (efinance, akshare, tushare, pytdx, baostock, yfinance, tickflow) and CN notification senders (WeChat, Feishu, PushPlus, Server酱3, AstrBot, Pushover, DingTalk). Added VnstockFetcher (primary) and TCBSFetcher (fallback). Rewrote trading_calendar.py (HOSE/XSTC, UTC+7), market_profile.py (VNINDEX/VN30), and market_context.py (always returns vn region with T+2.5/±7%/lot-100 rules).
-- [新功能] 🇻🇳 **Vietnam market migration — Phase 3** — Added Vietnamese (vi) as the default report language with full label translations in report_language.py. Rewrote market_review.py to Vietnam-only (VNINDEX+VN30). Added ZaloSender stub (deferred until Zalo OA approval).
-- [新功能] 🇻🇳 **Vietnam market migration — Phase 4** — Migrated 11 strategy YAMLs: added vn_market block (±7%/±10% price limits, lot 100, T+2.5 settlement, no short-selling), translated display_name/description to Vietnamese. Added 3 VN-specific strategy scaffolds: vn30_rotation, vn_bank_sector, vn_penny_alert.
-- [改进] 🇻🇳 **Vietnam market migration — Phase 5** — Translated telegram_sender.py comments/docstrings to English. Updated research.py bot command with VN stock code regex (3-char equities + ETF format). Fixed pipeline.py: removed us_index_mapping import, neutralized US-only social sentiment blocks.
-- [改进] 🇻🇳 **Vietnam market migration — Phase 6 (config)** — Updated config.py defaults: report_language=vi, market_review_region=vn, realtime_source_priority=vnstock,tcbs, discord_bot_status for VN.
-
-- [修复] 🐳 **Docker WebUI 运行时优先复用预构建静态资源** — `prepare_webui_frontend_assets()` 现在会先检查镜像内已有的 `static/index.html` 是否可直接复用；当容器运行时不包含 `apps/dsa-web` 源码目录且未安装 `npm` 时，也不会误报“未找到前端项目，无法自动构建”，从而恢复 Docker 部署后的 WebUI 打开能力。
-- [修复] 市场复盘生成链路将 LLM `max_tokens` 从 `2048` 提升到 `8192`，降低长复盘输出因 `MAX_TOKENS` 提前截断导致内容未完成的概率。
+- [docs] 📋 **Thêm kế hoạch chuyển đổi sang thị trường Việt Nam** — Brainstorm session hoàn tất, kết quả lưu tại `docs/vietnam-migration-plan.md`. Quyết định: dữ liệu vnstock+TCBS, chỉ HOSE, báo cáo tiếng Việt, thông báo Zalo+Telegram+Discord, strategies chuyển đổi+thêm mới.
+- [feat] 🇻🇳 **Vietnam market migration — Phase 1+2** — Removed all CN/HK/US data fetchers (efinance, akshare, tushare, pytdx, baostock, yfinance, tickflow) and CN notification senders (WeChat, Feishu, PushPlus, ServerChan3, AstrBot, Pushover, DingTalk). Added VnstockFetcher (primary) and TCBSFetcher (fallback). Rewrote trading_calendar.py (HOSE/XSTC, UTC+7), market_profile.py (VNINDEX/VN30), and market_context.py (always returns vn region with T+2.5/±7%/lot-100 rules).
+- [feat] 🇻🇳 **Vietnam market migration — Phase 3** — Added Vietnamese (vi) as the default report language with full label translations in report_language.py. Rewrote market_review.py to Vietnam-only (VNINDEX+VN30). Added ZaloSender stub (deferred until Zalo OA approval).
+- [feat] 🇻🇳 **Vietnam market migration — Phase 4** — Migrated 11 strategy YAMLs: added vn_market block (±7%/±10% price limits, lot 100, T+2.5 settlement, no short-selling), translated display_name/description to Vietnamese. Added 3 VN-specific strategy scaffolds: vn30_rotation, vn_bank_sector, vn_penny_alert.
+- [improvement] 🇻🇳 **Vietnam market migration — Phase 5** — Translated telegram_sender.py comments/docstrings to English. Updated research.py bot command with VN stock code regex (3-char equities + ETF format). Fixed pipeline.py: removed us_index_mapping import, neutralized US-only social sentiment blocks.
+- [improvement] 🇻🇳 **Vietnam market migration — Phase 6** — Updated config.py defaults: report_language=vi, market_review_region=vn, realtime_source_priority=vnstock,tcbs. Updated .env.example, full-guide docs. Passed CI gate.
+- [fix] 🐳 **Docker WebUI: reuse pre-built static assets** — `prepare_webui_frontend_assets()` now checks for an existing `static/index.html` before attempting to rebuild; avoids false “frontend not found” error when running in Docker without the `apps/dsa-web` source dir or npm.
+- [fix] **Market review LLM max_tokens raised from 2048 to 8192** — reduces truncation of long daily review outputs.
 
 ## [3.11.0] - 2026-03-27
 

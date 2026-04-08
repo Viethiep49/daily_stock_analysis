@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 """
-自定义 Webhook 发送提醒服务
+Custom Webhook notification sender service
 
-职责：
-1. 发送自定义 Webhook 消息
+Responsibilities:
+1. Send custom Webhook messages
 """
 import logging
 import json
@@ -20,10 +20,10 @@ class CustomWebhookSender:
 
     def __init__(self, config: Config):
         """
-        初始化自定义 Webhook 配置
+        Initialize custom Webhook configuration.
 
         Args:
-            config: 配置对象
+            config: Configuration object.
         """
         self._custom_webhook_urls = getattr(config, 'custom_webhook_urls', []) or []
         self._custom_webhook_bearer_token = getattr(config, 'custom_webhook_bearer_token', None)
